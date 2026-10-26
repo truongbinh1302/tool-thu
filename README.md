@@ -1,6 +1,8 @@
 # Tool Thư · Mây Teacher Space
 
-Bản local 0.4.4 dành cho tổ giáo viên, giao diện hồng pastel. Đây là bản để thử và góp ý trước nghiệm thu; chưa kết nối Google/iCloud.
+**0.4.5 (26/10/2026):** có bản app Mac chip Apple (`Tool Thư.app`, không cần cài Python), build và kiểm thử tự động trên macOS bằng GitHub Actions. Sửa lỗi server mở chậm/treo trên macOS do tra ngược DNS khi khởi động. Không đổi giao diện, schema (vẫn 2) hay dữ liệu.
+
+Bản local 0.4.5 dành cho tổ giáo viên, giao diện hồng pastel. Đây là bản để thử và góp ý trước nghiệm thu; chưa kết nối Google/iCloud.
 
 Bản 0.4.4 sửa nhập giờ Excel dạng số, từ chối CSV hỏng/tệp rỗng và phát hiện dòng thiếu ngày, trường quá dài, hạn lớp trước ngày tiếp nhận ngay ở bản xem trước. Ngày Excel ngoài phạm vi báo lỗi dữ liệu. Sửa phản hồi 401/403 đôi lúc bị Windows ngắt kết nối khi POST có body chưa đọc hết; kiểm tra phiên/Origin/CSRF giữ nguyên. Không đổi schema (vẫn 2), thiết kế hoặc cách track thủ công.
 
