@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8e7ed">
+  <meta name="description" content="Mây — góc nhỏ để chăm sóc đội ngũ giáo viên. Ứng dụng local dành cho tổ giáo viên.">
+  <title>Tool Thư — Góc quản lý giáo viên</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./graphics.js" defer></script>
+<script src="./core.js" defer></script>
+<script src="./views.js" defer></script>
+<script src="./forms.js" defer></script>
+<script src="./import.js" defer></script>
+<script src="./tracking.js" defer></script>
+<script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
+  <aside class="sidebar" id="sidebar" aria-label="Điều hướng chính">
+    <a class="brand" href="#overview" aria-label="Mây — Trang tổng quan"><span class="brand-flower" aria-hidden="true">✿</span><span>Mây<small>TEACHER SPACE</small></span></a>
+    <div class="workspace-label">GÓC LÀM VIỆC CỦA BẠN</div>
+    <nav id="navigation"></nav>
+    <div class="sidebar-bottom">
+      <div class="little-note"><span class="note-flower" aria-hidden="true">✽</span><p>Mỗi chút quan tâm,<br>một đội ngũ tốt hơn.</p><span class="hand-line">take it one day at a time</span></div>
+      <button class="nav-item" data-page="settings"><span data-icon="settings"></span><span>Tùy chỉnh</span></button>
+      <div class="account"><span class="avatar pink">AT</span><div><strong>Góc của Anh Thư</strong><small>Lưu trên máy của bạn</small></div><span class="account-dot"></span></div>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="breadcrumb"><button class="icon-btn mobile-menu" id="menu-toggle" aria-label="Mở menu"><span data-icon="menu"></span></button><span>Không gian của tôi</span><span class="crumb-slash">/</span><strong id="breadcrumb">Tổng quan</strong></div>
+      <div class="topbar-right"><label class="sr-only" for="data-mode">Chế độ dữ liệu</label><select id="data-mode"><option value="demo">Dùng thử</option><option value="real">Dữ liệu thật</option></select><button class="icon-btn" id="search-button" aria-label="Tìm kiếm"><span data-icon="search"></span></button><button class="icon-btn notification-button" id="notifications-button" aria-label="Xem việc cần chú ý"><span data-icon="bell"></span><i></i></button><span class="avatar small pink" aria-label="Anh Thư">AT</span></div>
+    </header>
+    <main id="main" tabindex="-1"><div class="empty-state"><strong>Đang mở góc làm việc…</strong></div></main>
+    <footer class="footer"><span>Được sắp xếp gọn gàng, cùng Mây <span aria-hidden="true">♡</span></span><span>Tool Thư <span id="app-version"></span> · Chưa kết nối Google/iCloud</span></footer>
+  </div>
+  <div id="overlay-root"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
