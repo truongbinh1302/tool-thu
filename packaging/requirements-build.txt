@@ -1,2 +1,4 @@
 # Chỉ dùng để build app, không cần khi chạy từ mã nguồn.
 pyinstaller==6.22.3
+# Danh sách chứng chỉ HTTPS cho Python đóng gói (kết nối Google).
+certifi

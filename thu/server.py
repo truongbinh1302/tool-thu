@@ -35,12 +35,13 @@ class LocalServer(ThreadingHTTPServer):
 class Handler(BaseHTTPRequestHandler):
     server_version='ToolThu';sys_version=''
     def log_message(self,*args):pass
-    def send(self,status,body,typ='application/json; charset=utf-8',cookie=False,filename=None):
+    def send(self,status,body,typ='application/json; charset=utf-8',cookie=False,filename=None,location=None):
         raw=canonical(body).encode() if typ.startswith('application/json') else body
         self.send_response(status);self.send_header('Content-Type',typ);self.send_header('Content-Length',str(len(raw)));self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.send_header('X-Frame-Options','DENY');self.send_header('Referrer-Policy','no-referrer')
         self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
         if cookie:self.send_header('Set-Cookie',f'thu_session={self.server.session}; HttpOnly; SameSite=Strict; Path=/')
         if filename:self.send_header('Content-Disposition',f'attachment; filename="{filename}"')
+        if location:self.send_header('Location',location)
         self.end_headers();self.wfile.write(raw)
     def guard(self,write=False,auth=True):
         allowed={f'127.0.0.1:{self.server.server_port}',f'localhost:{self.server.server_port}'}
@@ -88,9 +89,24 @@ class Handler(BaseHTTPRequestHandler):
                 if not dest.is_file():raise AppError('Tệp không còn tồn tại.',404)
                 return self.send(200,dest.read_bytes(),'application/octet-stream',filename=name)
             raise AppError('Không tìm thấy API.',404)
+        if path=='/' and 'state' in q and ('code' in q or 'error' in q):return self.google_callback(q)
         requested=unquote(path).lstrip('/') or 'index.html';dest=(self.server.web/requested).resolve()
         if not dest.is_relative_to(self.server.web) or not dest.is_file():raise AppError('Không tìm thấy tài nguyên.',404)
         return self.send(200,dest.read_bytes(),mimetypes.guess_type(dest.name)[0] or 'application/octet-stream')
+    def google_callback(self,q):
+        state=q.get('state',[''])[0]
+        if not self.server.service.google.is_pending(state):
+            return self.send(302,b'',typ='text/html; charset=utf-8',location='/#sources')
+        try:
+            info=self.server.service.google.finish(state,q.get('code',[''])[0],q.get('error',[None])[0]);ok=True
+            message='Đã kết nối Google'+((' với '+info['email']) if info.get('email') else '')+'. Đang quay lại Tool Thư…'
+        except AppError as e:ok=False;message=str(e)
+        import html
+        page=('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="2;url=/#sources"><title>Tool Thư</title>'
+              '<body style="font-family:system-ui,sans-serif;background:#fbf2f6;color:#4a3640;display:grid;place-items:center;height:100vh;margin:0">'
+              '<div style="background:#fff;padding:32px 40px;border-radius:20px;max-width:460px;text-align:center"><h2>'+('✿ Kết nối thành công' if ok else 'Chưa kết nối được')+'</h2>'
+              '<p>'+html.escape(message)+'</p><p><a href="/#sources" style="color:#b0507a">Quay lại Tool Thư</a></p></div></body>')
+        return self.send(200 if ok else 400,page.encode('utf-8'),'text/html; charset=utf-8')
     def do_POST(self):self.run_safe(self.post)
     def body(self):
         try:n=int(self.headers.get('Content-Length','0'))
@@ -158,6 +174,15 @@ class Handler(BaseHTTPRequestHandler):
             # Consistent SQLite checkpoint before import, never raw-copy a live DB.
             name=mode+'-before-import-'+uid()+'.thubackup';(store.directory/name).write_bytes(store.backup())
             s,result=store.mutate(plan['revision'],b.get('requestId'),'import.commit',{'fingerprint':plan['fingerprint'],'partial':bool(b.get('allowPartial'))},lambda s:apply_plan(service,s,plan,clock,bool(b.get('allowPartial'))),clock.stamp());return self.send(200,{'state':service.decorate(s,mode),'result':result})
+        if path=='/api/google/client':
+            return self.send(200,{'google':service.google.save_client(text(b.get('json'),True,20000))})
+        if path=='/api/google/start':
+            return self.send(200,{'url':service.google.start(f'http://127.0.0.1:{self.server.server_port}/')})
+        if path=='/api/google/disconnect':
+            return self.send(200,{'google':service.google.disconnect()})
+        if path=='/api/import/google/open':
+            book=service.google.read_book(text(b.get('link'),True,2000));key=self.server.hold('workbook',mode,book)
+            return self.send(200,{'uploadId':key,'filename':book['filename'],'missingCache':0,'templates':FIELDS,'google':book['google'],'sheets':[{'name':s['name'],'rows':len(s['rows']),'suggestedHeader':s['suggestedHeader'],'warnings':s['warnings']} for s in book['sheets']]})
         if path=='/api/shutdown':
             self.send(200,{'ok':True});threading.Thread(target=self.server.shutdown,daemon=True).start();return
         raise AppError('Không tìm thấy API.',404)

@@ -1,8 +1,10 @@
 # Tool Thư · Mây Teacher Space
 
+**0.4.6 (26/10/2026):** kết nối Google Sheets (chỉ xem): ở Nguồn dữ liệu chọn file OAuth client (Desktop app) một lần, bấm **Kết nối Google** để đăng nhập, rồi **Nhập từ Google Sheet** bằng link, qua cùng các bước ánh xạ/xem trước như Excel. Chỉ gọi Google khi bạn bấm nút; token lưu trong thư mục dữ liệu, không nằm trong DB hay bản sao lưu. Hướng dẫn tạo OAuth client: `docs/GOOGLE_OAUTH_SETUP.md`.
+
 **0.4.5 (26/10/2026):** có bản app Mac chip Apple (`Tool Thư.app`, không cần cài Python), build và kiểm thử tự động trên macOS bằng GitHub Actions. Sửa lỗi server mở chậm/treo trên macOS do tra ngược DNS khi khởi động. Không đổi giao diện, schema (vẫn 2) hay dữ liệu.
 
-Bản local 0.4.5 dành cho tổ giáo viên, giao diện hồng pastel. Đây là bản để thử và góp ý trước nghiệm thu; chưa kết nối Google/iCloud.
+Bản local 0.4.6 dành cho tổ giáo viên, giao diện hồng pastel. Đây là bản để thử và góp ý trước nghiệm thu; chưa kết nối Google/iCloud.
 
 Bản 0.4.4 sửa nhập giờ Excel dạng số, từ chối CSV hỏng/tệp rỗng và phát hiện dòng thiếu ngày, trường quá dài, hạn lớp trước ngày tiếp nhận ngay ở bản xem trước. Ngày Excel ngoài phạm vi báo lỗi dữ liệu. Sửa phản hồi 401/403 đôi lúc bị Windows ngắt kết nối khi POST có body chưa đọc hết; kiểm tra phiên/Origin/CSRF giữ nguyên. Không đổi schema (vẫn 2), thiết kế hoặc cách track thủ công.
 

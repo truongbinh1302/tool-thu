@@ -183,9 +183,14 @@ def main():
     parser.add_argument('--no-browser', action='store_true')
     parser.add_argument('--stop', action='store_true')
     parser.add_argument('--diagnose', action='store_true')
+    parser.add_argument('--check-network', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535:
         parser.error('--port cần nằm trong 1024–65535.')
+    if args.check_network:
+        from thu.google import check_network
+        print('HTTPS Google:', check_network(), flush=True)
+        return
     directory = Path(args.data_dir).expanduser().resolve() if args.data_dir else default_dir().resolve()
     expected_build = build_id()
     if args.diagnose:

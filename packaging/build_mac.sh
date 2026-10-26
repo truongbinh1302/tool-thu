@@ -43,6 +43,7 @@ curl -fsS --noproxy '*' "http://127.0.0.1:${PORT}/api/health"; echo
 curl -fsS --noproxy '*' -o /dev/null "http://127.0.0.1:${PORT}/"
 curl -fsS --noproxy '*' "http://127.0.0.1:${PORT}/api/bootstrap" | "$PY" -c "import json,sys;s=json.load(sys.stdin)['state'];assert len(s['teachers'])==20, 'thiếu dữ liệu mẫu';print('Dữ liệu mẫu OK:',len(s['teachers']),'giáo viên')"
 "$EXE" --diagnose --data-dir "$SMOKE" | grep '"current": true'
+"$EXE" --check-network   # HTTPS tới Google phải xác thực được chứng chỉ trong app đóng gói
 "$EXE" --stop --data-dir "$SMOKE"
 
 echo "== DMG"

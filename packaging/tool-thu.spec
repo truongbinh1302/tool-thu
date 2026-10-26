@@ -14,7 +14,7 @@ a = Analysis(
         (str(ROOT / 'web'), 'web'),
         (str(ROOT / 'examples' / 'demo-seed.json'), 'examples'),
     ],
-    hiddenimports=[],
+    hiddenimports=['certifi'],
     excludes=['tkinter', 'unittest', 'pydoc', 'test'],
     noarchive=False,
 )

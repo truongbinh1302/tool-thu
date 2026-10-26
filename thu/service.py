@@ -7,6 +7,7 @@ from .metrics import report
 from .calendar_service import CalendarMixin,calendar_events
 from .tracking import TrackingMixin,tracking_state
 from .adapters import FakeSheetsSourceAdapter
+from .google import GoogleClient
 import threading
 
 def find(s,key,id):
@@ -38,9 +39,10 @@ class Service(TrackingMixin,CalendarMixin):
         self.stores={m:Store(directory,m) for m in ('demo','real')}
         self.source_adapters=source_adapters if source_adapters is not None else {'fakeSheets':FakeSheetsSourceAdapter()}
         self.tracking_locks={m:threading.Lock() for m in ('demo','real')}
+        self.google=GoogleClient(directory)
     def snapshot(self,mode,period=None):return self.decorate(self.stores[mode].read(),mode,period)
     def decorate(self,s,mode,period=None):
-        s=deepcopy(s);tracking_state(s);s['events']=calendar_events(s);clock=Clock(mode);p=monday(period or clock.today());s.update(_mode=mode,_today=clock.today(),_now=clock.stamp(),_report=report(s,p))
+        s=deepcopy(s);tracking_state(s);s['events']=calendar_events(s);clock=Clock(mode);p=monday(period or clock.today());s.update(_mode=mode,_today=clock.today(),_now=clock.stamp(),_report=report(s,p),_google=self.google.status())
         prev=(date.fromisoformat(p)-timedelta(days=7)).isoformat();s['_reportPrevious']=report(s,prev)
         s['_trend']=[report(s,(date.fromisoformat(monday(clock.today()))-timedelta(days=7*i)).isoformat()) for i in reversed(range(6))]
         byid={r['id']:r for r in s['_report']['teachers']}
