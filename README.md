@@ -24,6 +24,12 @@ Bản 0.4.0 đã có nút ở Tổng quan/Nguồn dữ liệu, luồng đọc ng
 
 Kiểm tra bản 0.4.2: 48 unittest PASS trên Linux, 18 lượt render template, 7 kiểm tra cú pháp JavaScript và unit điều phối nút. Đã kiểm tra Chrome cloud với dữ liệu giả cho các màn hình/kích thước ghi trong `qa/ACCEPTANCE-0.4.2.md`. Mac/Windows thật, DPI/zoom thật và Apple Calendar client vẫn chưa xác minh đầy đủ.
 
+## Bản app cho Mac (không cần cài Python)
+
+Có bản `Tool Thư.app` đóng gói sẵn cho Mac chip Apple, tải file `.dmg` ở mục Releases. Hướng dẫn cài: `packaging/CAI_DAT_MAC.md`. App ký ad-hoc (miễn phí, chưa đăng ký với Apple), nên lần đầu cần gỡ dấu tải về bằng `xattr` hoặc bấm **Vẫn mở** trong Quyền riêng tư & Bảo mật. Dữ liệu dùng chung thư mục với bản chạy từ mã nguồn.
+
+Build: đẩy tag `vX.Y.Z` lên GitHub, workflow `build-mac.yml` chạy test trên macOS, đóng gói, chạy thử app và gắn DMG vào Release. Build tay trên Mac: `bash packaging/build_mac.sh`.
+
 ## Mở ứng dụng
 
 1. Giải nén toàn bộ ZIP. Bạn sẽ có thư mục **tool-thu**. Đặt thư mục ở nơi dễ tìm, ví dụ Documents.
