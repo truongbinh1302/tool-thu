@@ -15,10 +15,10 @@ import webbrowser
 if sys.version_info < (3, 11):
     raise SystemExit('Tool Thu can Python 3.11 tro len. Hay cai Python tu python.org.')
 from thu import __version__
-from thu.runtime import build_id
+from thu.runtime import build_id, is_frozen, resource_root
 from thu.server import LocalServer
 
-ROOT = Path(__file__).resolve().parent
+ROOT = resource_root()
 
 
 def default_dir():
@@ -144,12 +144,20 @@ def serve(directory, port, expected_build):
         lock.unlink(missing_ok=True)
 
 
+def server_command(directory, port):
+    """Command that starts the background server: re-run this app/script with --serve."""
+    args = ['--serve', '--no-browser', '--data-dir', str(directory), '--port', str(port)]
+    if is_frozen():
+        # A packaged app's executable is the launcher itself; it takes no -X or script path.
+        return [sys.executable, *args]
+    return [sys.executable, '-X', 'utf8', str(ROOT / 'start.py'), *args]
+
+
 def launch(directory, port, expected_build):
     log_path = directory / 'startup.log'
     if log_path.exists() and log_path.stat().st_size > 512 * 1024:
         os.replace(log_path, directory / 'startup.previous.log')
-    command = [sys.executable, '-X', 'utf8', str(ROOT / 'start.py'), '--serve', '--no-browser',
-               '--data-dir', str(directory), '--port', str(port)]
+    command = server_command(directory, port)
     flags = {'start_new_session': True} if os.name != 'nt' else {
         'creationflags': subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP}
     with log_path.open('ab') as log:
@@ -162,7 +170,8 @@ def launch(directory, port, expected_build):
         if process.poll() is not None:
             break
         time.sleep(.1)
-    raise SystemExit(f'Chưa mở được Tool Thư. Xem lỗi tại: {log_path}\nChạy Kiem_tra_Tool_Thu_Windows.bat để xem tình trạng.')
+    hint = '' if is_frozen() else '\nChạy Kiem_tra_Tool_Thu_Windows.bat để xem tình trạng.'
+    raise SystemExit(f'Chưa mở được Tool Thư. Xem lỗi tại: {log_path}{hint}')
 
 
 def main():
@@ -206,14 +215,39 @@ def main():
         webbrowser.open(url)
 
 
+def show_alert(message):
+    """A packaged app has no terminal window, so surface launcher errors in a dialog."""
+    if not is_frozen() or '--serve' in sys.argv:
+        return
+    try:
+        if sys.platform == 'darwin':
+            script = 'display alert "Tool Thư" message ' + json.dumps(message) + ' as warning'
+            subprocess.run(['osascript', '-e', script], timeout=120, check=False)
+        elif os.name == 'nt':
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(None, message, 'Tool Thư', 0x30)
+    except Exception:
+        pass
+
+
 if __name__ == '__main__':
+    if sys.stdout is None or sys.stderr is None:
+        # Windowed builds may start without console streams.
+        sys.stdout = sys.stdout or open(os.devnull, 'w', encoding='utf-8')
+        sys.stderr = sys.stderr or open(os.devnull, 'w', encoding='utf-8')
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, 'reconfigure'):
             stream.reconfigure(encoding='utf-8', errors='replace')
     try:
         main()
+    except SystemExit as stop:
+        if isinstance(stop.code, str):
+            show_alert(stop.code)
+        raise
     except Exception as error:
         # Exception values may contain imported personal data; do not log them.
-        print(f'Không thể mở/dừng Tool Thư ({type(error).__name__}, errno={getattr(error, "errno", None)}). Kiểm tra quyền thư mục, dung lượng và phiên đang chạy.', file=sys.stderr)
+        message = f'Không thể mở/dừng Tool Thư ({type(error).__name__}, errno={getattr(error, "errno", None)}). Kiểm tra quyền thư mục, dung lượng và phiên đang chạy.'
+        print(message, file=sys.stderr)
+        show_alert(message)
         sys.exit(1)
 

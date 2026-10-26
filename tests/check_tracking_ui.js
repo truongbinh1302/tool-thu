@@ -19,5 +19,5 @@ vm.runInContext(['graphics','core','views','forms','import','tracking'].map(n=>f
  await vm.runInContext('runTracking()',context);assert.equal(JSON.parse(requests.at(-1).body).requestId,failedId,'Uncertain write retry must retain request identity');
  context.realNotice=false;vm.runInContext("mode='real';trackingUnavailable=()=>{realNotice=true;};",context);const count=requests.length;await vm.runInContext('runTracking()',context);assert.equal(requests.length,count);assert.equal(context.realNotice,true);
  console.log('PASS: no read at module load, explicit request, disabled busy button, double-click guard, committed state accepted, busy cleared, error cleanup, retry identity, real-mode guard.');
- fs.writeFileSync(path.join(root,'qa/tracking-ui-unit.txt'),'PASS: frontend orchestration unit checks. No browser visual verification.\n');
+ fs.mkdirSync(path.join(root,'qa'),{recursive:true});fs.writeFileSync(path.join(root,'qa/tracking-ui-unit.txt'),'PASS: frontend orchestration unit checks. No browser visual verification.\n');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -68,7 +68,8 @@ def empty_state():
     return {**{k:[] for k in ('teachers','classes','aliases','tasks','templates','processes','events','meetings','sources','metrics','errors','importBatches','reports','feedback')},'reportNotes':{},'settings':{'attendance':85,'homework':80,'skill':70,'operator':'>=','confirmed':False,'weekConfirmed':False,'effectiveDate':'','version':'unconfirmed'},'ruleDecisions':[],'connections':{'google':'DEFERRED','icloud':'DEFERRED','enabled':False}}
 
 def demo_state():
-    src=json.loads((Path(__file__).resolve().parents[1]/'examples/demo-seed.json').read_text(encoding='utf-8'))
+    from .runtime import resource_root
+    src=json.loads((resource_root()/'examples/demo-seed.json').read_text(encoding='utf-8'))
     s=empty_state(); s['settings'].update(confirmed=True,weekConfirmed=True,effectiveDate='2026-01-01',version='DEMO-ONLY')
     for t in src['teachers']:
         teacher={k:v for k,v in t.items() if k not in ('classes','attendance','homework','skill','qc')}
