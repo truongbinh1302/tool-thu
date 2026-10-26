@@ -162,7 +162,8 @@ def launch(directory, port, expected_build):
         'creationflags': subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP}
     with log_path.open('ab') as log:
         process = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=log, stderr=log, **flags)
-    deadline = time.monotonic() + 10
+    # Generous: a packaged app's first launch on macOS may be slowed by security scans.
+    deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         info = running_info(directory)
         if info and info.get('version') == __version__ and info.get('build') == expected_build:

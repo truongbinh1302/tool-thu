@@ -62,3 +62,16 @@ class FrozenTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class NoReverseDnsTest(unittest.TestCase):
+    def test_server_start_does_not_resolve_hostname(self):
+        from thu.server import LocalServer
+        with tempfile.TemporaryDirectory() as data, \
+                mock.patch('socket.getfqdn', side_effect=AssertionError('reverse DNS lookup')):
+            server = LocalServer(('127.0.0.1', 0), data, ROOT / 'web')
+            try:
+                self.assertEqual(server.server_name, '127.0.0.1')
+                self.assertGreater(server.server_port, 0)
+            finally:
+                server.server_close()

@@ -1,4 +1,4 @@
-import base64,json,secrets,threading,time,mimetypes,sqlite3,hashlib
+import base64,json,secrets,threading,time,mimetypes,sqlite3,hashlib,socketserver
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from urllib.parse import urlsplit,parse_qs,unquote
 from pathlib import Path
@@ -11,6 +11,11 @@ from . import __version__
 from .runtime import build_id
 class LocalServer(ThreadingHTTPServer):
     daemon_threads=False
+    def server_bind(self):
+        # HTTPServer.server_bind calls socket.getfqdn(), a reverse-DNS lookup that can
+        # stall for many seconds on macOS. Loopback needs no hostname.
+        socketserver.TCPServer.server_bind(self)
+        host,port=self.server_address[:2];self.server_name=host;self.server_port=port
     def __init__(self,address,directory,web):
         super().__init__(address,Handler)
         try:
