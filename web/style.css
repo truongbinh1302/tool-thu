@@ -31,3 +31,7 @@ body{font-family:"Be Vietnam Pro","Segoe UI",-apple-system,BlinkMacSystemFont,Ar
 
 /* Leave room for Vietnamese headings and supporting text on compact laptops. */
 @media(min-width:761px) and (max-width:1000px){.page-heading{flex-wrap:wrap;align-items:flex-start}.heading-actions{flex-wrap:wrap}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-copy{max-width:100%}.hero-art{opacity:.24}}
+
+/* 0.4.8: thanh bên luôn tới được mục Tùy chỉnh trên màn hình thấp (MacBook Air + thanh bookmark). */
+.sidebar{overflow-y:auto;overscroll-behavior:contain}
+@media (max-height:820px){.little-note{display:none}.brand{padding-bottom:22px}}
