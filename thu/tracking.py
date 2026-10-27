@@ -11,6 +11,29 @@ def value_signature(m):return digest([float(m[k]) if m.get(k) is not None else N
 def current_metric(state,payload):return next((m for m in state['metrics'] if metric_key(m)==metric_key(payload)),None)
 def key_string(m):return digest(metric_key(m))
 
+
+TARGETS={'teachers':'teachers','tasks':'tasks','cases':'processes','qc':'errors'}
+def record_for(state,template,item):
+    target=TARGETS.get(template)
+    if not target:return None
+    rid=(item.get('data') or {}).get('id')
+    return next((r for r in state[target] if (rid and r['id']==rid) or (not rid and r.get('importKey')==item.get('key'))),None)
+def field_signature(rec,fields):return digest([rec.get(f) for f in fields]) if rec else 'missing'
+def google_source_id(track):return 'g-'+digest([track['spreadsheetId'],track['sheet'],track['template']])[:16]
+def save_google_source(state,plan,clock):
+    """Remember an imported Google sheet so "Cập nhật dữ liệu" can re-read it later (only on button press)."""
+    track=plan['_track'];cfg=tracking_state(state);sid=google_source_id(track)
+    baseline={}
+    for item in plan['items']:
+        if item['status'] in ('create','update','duplicate'):
+            rec=record_for(state,plan['template'],item)
+            if rec:baseline[item['key']]=field_signature(rec,item.get('fields',[]))
+    old=next((x for x in cfg['sources'] if x['id']==sid),None)
+    source={'id':sid,'name':track['title']+' · '+track['sheet'],'adapter':'googleSheets','spreadsheetId':track['spreadsheetId'],'title':track['title'],'sheet':track['sheet'],'header':track['header'],'template':track['template'],'mapping':track['mapping'],'options':track['options'],'headerLabels':track['headerLabels'],'approved':True,'baseline':{**(old or {}).get('baseline',{}),**baseline},'created':(old or {}).get('created',clock.stamp()),'lastSuccess':clock.stamp()}
+    if old:cfg['sources'][cfg['sources'].index(old)]=source
+    else:cfg['sources'].append(source)
+    return sid
+
 class TrackingMixin:
     def cmd_tracking_fixture(self,s,p,clock):
         if clock.mode!='demo':raise AppError('Nguồn thử chỉ dùng trong kho Dùng thử. Google Sheets thật vẫn chưa kết nối.',409,'DEFERRED')
@@ -24,7 +47,7 @@ class TrackingMixin:
         return {'id':sid,'staged':True,'readPerformed':False}
 
     def track(self,mode,expected,request_id,source_ids):
-        if mode!='demo':raise AppError('Google Sheets thật chưa kết nối. Bạn có thể nhập Excel/CSV hoặc thử luồng trong kho Dùng thử.',409,'DEFERRED')
+        if mode!='demo':return self.track_google(mode,expected,request_id,source_ids)
         if not isinstance(source_ids,list) or not 1<=len(source_ids)<=10 or any(not isinstance(x,str) for x in source_ids) or len(set(source_ids))!=len(source_ids):raise AppError('Chọn từ 1 đến 10 nguồn, không lặp.')
         source_ids=sorted(source_ids);payload={'sourceIds':source_ids};store=self.stores[mode];clock=Clock(mode)
         if not self.tracking_locks[mode].acquire(blocking=False):raise AppError('Một lượt cập nhật đang chạy. Hãy chờ lượt đó hoàn tất.',423,'TRACK_BUSY')
@@ -98,6 +121,79 @@ class TrackingMixin:
             state,result=store.mutate(expected,request_id,'tracking.run',payload,commit,clock.stamp())
             return {'state':self.decorate(state,mode),'result':result}
         finally:self.tracking_locks[mode].release()
+
+    def track_google(self,mode,expected,request_id,source_ids):
+        """Re-read saved Google Sheets sources once, because the user pressed the button (C03)."""
+        if not isinstance(source_ids,list) or not 1<=len(source_ids)<=20 or any(not isinstance(x,str) for x in source_ids) or len(set(source_ids))!=len(source_ids):raise AppError('Chọn từ 1 đến 20 nguồn, không lặp.')
+        source_ids=sorted(source_ids);payload={'sourceIds':source_ids};store=self.stores[mode];clock=Clock(mode)
+        if not self.tracking_locks[mode].acquire(blocking=False):raise AppError('Một lượt cập nhật đang chạy. Hãy chờ lượt đó hoàn tất.',423,'TRACK_BUSY')
+        try:
+            if store.request_seen(request_id,'tracking.run',payload):
+                s=store.read();run=next((r for r in tracking_state(s)['runs'] if r['id']==request_id),{})
+                return {'state':self.decorate(s,mode),'result':{**run,'replayed':True}}
+            initial=store.read()
+            if type(expected)!=int or initial['_revision']!=expected:raise AppError('Dữ liệu đã thay đổi. Kiểm tra bản mới trước khi bấm cập nhật lại.',409,'STALE')
+            cfg=tracking_state(initial);selected=[next((s for s in cfg['sources'] if s['id']==sid),None) for sid in source_ids]
+            if any(s is None or not s.get('approved') or s.get('adapter')!='googleSheets' for s in selected):raise AppError('Nguồn chưa được lưu. Hãy nhập Google Sheet và tick "Lưu làm nguồn" trước.')
+            if not self.google.status().get('connected'):raise AppError('Chưa kết nối Google (hoặc phiên đã hết hạn). Vào Nguồn dữ liệu → Kết nối Google rồi bấm lại.',409,'GOOGLE_LOGIN')
+            from .importer import build_plan,columns
+            plans=[];failures=[]
+            # Network reads happen before the write transaction; the commit uses CAS on the revision.
+            for source in selected:
+                try:
+                    book=self.google.read_book(source['spreadsheetId'],tabs=[source['sheet']])
+                    labels={str(c['index']):c['label'] for c in columns(book,source['sheet'],source['header'],source['template'])['columns']}
+                    for index,label in source.get('headerLabels',{}).items():
+                        if labels.get(index)!=label:raise AppError('Cột "'+label+'" trong sheet đã đổi vị trí hoặc tên'+((' (giờ là "'+labels[index]+'")') if labels.get(index) else '')+'. Dữ liệu cũ được giữ; hãy nhập lại sheet này để ánh xạ lại.',409,'SOURCE_SCHEMA')
+                    plan=build_plan(book,source['sheet'],source['header'],source['template'],source['mapping'],{**source.get('options',{}),'policy':'overwrite'},initial,clock)
+                    plans.append((source,plan))
+                except AppError as e:failures.append({'id':source['id'],'name':source['name'],'status':'ERROR','message':str(e),'code':e.code})
+            def commit(state):
+                from .importer import apply_plan
+                conf=tracking_state(state);results=list(failures);applied=0
+                for source,plan in plans:
+                    persisted=next(x for x in conf['sources'] if x['id']==source['id']);baseline=persisted.setdefault('baseline',{})
+                    kept=0;valid=[];notes=[]
+                    for item in plan['items']:
+                        if item['status'] in ('review','error'):notes.append('Dòng '+str(item['row'])+': '+item['message']);continue
+                        if item['status']!='update':
+                            if item['status']=='create':valid.append(item)
+                            continue
+                        rec=record_for(state,plan['template'],item);base=baseline.get(item['key'])
+                        if rec and base and field_signature(rec,item.get('fields',[]))!=base:
+                            item.update(status='kept',message='Giữ bản bạn đã sửa trong tool.');kept+=1;continue
+                        if rec and plan['template']=='teachers':item['data']['status']=rec.get('status','active')
+                        valid.append(item)
+                    counts={k:sum(i['status']==k for i in plan['items']) for k in ('create','update','duplicate','skipped','review','error','kept')}
+                    count=0
+                    if valid:
+                        prepared=deepcopy(plan);prepared['items']=valid;prepared['fingerprint']=digest(['manual-track',source['id'],request_id]);prepared['counts']=counts
+                        count=apply_plan(self,state,prepared,clock,False)['applied'];applied+=count
+                        state['sources'].pop()  # the saved source is already listed; history stays in importBatches
+                    for item in plan['items']:
+                        if item['status'] in ('create','update','duplicate'):
+                            rec=record_for(state,plan['template'],item)
+                            if rec:baseline[item['key']]=field_signature(rec,item.get('fields',[]))
+                    persisted['lastSuccess']=clock.stamp()
+                    waiting=counts['review']+counts['error']
+                    message='Đã đọc lại sheet: '+str(counts['create'])+' dòng mới, '+str(counts['update'])+' dòng thay đổi'+(', giữ '+str(kept)+' dòng bạn đã sửa' if kept else '')+(', '+str(waiting)+' dòng cần kiểm tra (chưa nhập)' if waiting else '')+'.'
+                    results.append({'id':source['id'],'name':source['name'],'status':'REVIEW' if waiting else 'SUCCESS','counts':counts,'appliedRecords':count,'message':message,'notes':notes[:20]})
+                status='ERROR' if not plans else 'PARTIAL' if failures else 'REVIEW' if any(r['status']=='REVIEW' for r in results) else 'SUCCESS'
+                run={'id':request_id,'status':status,'stamp':clock.stamp(),'sourceIds':source_ids,'sources':results,'appliedRecords':applied}
+                conf['lastAttempt']=clock.stamp()
+                if plans and not failures:conf['lastSuccess']=clock.stamp()
+                if applied:conf['lastApplied']=clock.stamp()
+                conf['runs']=(conf['runs']+[run])[-20:]
+                return run
+            state,result=store.mutate(expected,request_id,'tracking.run',payload,commit,clock.stamp())
+            return {'state':self.decorate(state,mode),'result':result}
+        finally:self.tracking_locks[mode].release()
+
+    def cmd_tracking_source_remove(self,s,p,clock):
+        cfg=tracking_state(s);source=next((x for x in cfg['sources'] if x['id']==p.get('id')),None)
+        if not source:raise AppError('Không tìm thấy nguồn.',404)
+        if source.get('adapter')!='googleSheets':raise AppError('Chỉ gỡ được nguồn Google Sheets đã lưu.')
+        cfg['sources'].remove(source);return {'id':source['id'],'removed':True}
 
     def cmd_tracking_review(self,s,p,clock):
         if clock.mode!='demo':raise AppError('Luồng nguồn thử chỉ có trong kho Dùng thử.',409,'DEFERRED')

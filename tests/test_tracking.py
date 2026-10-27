@@ -24,7 +24,7 @@ class Tracking(unittest.TestCase):
  def test_real_mode_cannot_read_fake_or_connect(self):
   with self.assertRaises(AppError):self.svc.command('real',0,uid(),'tracking.fixture',{'approved':True})
   with self.assertRaises(AppError) as e:self.svc.track('real',0,uid(),['demo-sheet-main'])
-  self.assertEqual(e.exception.code,'DEFERRED');self.assertEqual(self.adapter.read_count,0);self.assertEqual(self.svc.stores['real'].read()['teachers'],[])
+  self.assertIn('chưa được lưu',str(e.exception));self.assertEqual(self.adapter.read_count,0);self.assertEqual(self.svc.stores['real'].read()['teachers'],[])
  def test_failure_keeps_metrics_and_last_success_until_manual_retry(self):
   self.stage('changed');self.run_track();old=canonical(self.db.read()['metrics']);success=self.db.read()['tracking']['lastSuccess'];self.stage('offline');r=self.run_track();self.assertEqual(r['result']['status'],'ERROR');self.assertEqual(canonical(self.db.read()['metrics']),old);self.assertEqual(self.db.read()['tracking']['lastSuccess'],success)
   count=self.adapter.read_count;self.svc.snapshot('demo');self.assertEqual(self.adapter.read_count,count);self.stage('changed');self.assertEqual(self.adapter.read_count,count);self.run_track();self.assertEqual(self.adapter.read_count,count+1)

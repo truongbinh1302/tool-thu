@@ -6,6 +6,7 @@ from .common import *
 from .service import Service,find
 from .importer import read_workbook,columns,build_plan,apply_plan,FIELDS
 from .calendar_service import calendar_ics,calendar_events
+from .tracking import save_google_source
 from .exporting import report_csv
 from . import __version__
 from .runtime import build_id
@@ -165,15 +166,25 @@ class Handler(BaseHTTPRequestHandler):
         if path in ('/api/import/columns','/api/import/plan'):
             book=self.server.held(b.get('uploadId'),'workbook',mode);header=number(b.get('header'),1,1000000,whole=True)
             if path.endswith('columns'):return self.send(200,columns(book,b.get('sheet'),header,b.get('template')))
-            plan=build_plan(book,b.get('sheet'),header,b.get('template'),b.get('mapping'),b.get('options',{}),store.read(),clock);key=self.server.hold('import',mode,plan)
-            safe={k:v for k,v in plan.items() if k!='items'};safe.update(previewId=key,items=[{k:v for k,v in i.items() if k not in ('data','metrics')} for i in plan['items'][:150]],truncated=len(plan['items'])>150)
+            plan=build_plan(book,b.get('sheet'),header,b.get('template'),b.get('mapping'),b.get('options',{}),store.read(),clock)
+            if book.get('google') and plan['template'] in ('teachers','tasks','cases','qc'):
+                labels={c['index']:c['label'] for c in columns(book,plan['sheet'],header,plan['template'])['columns']}
+                plan['_track']={**book['google'],'sheet':plan['sheet'],'header':header,'template':plan['template'],'mapping':b.get('mapping'),'options':{k:v for k,v in b.get('options',{}).items() if k!='policy'}|{'sourceName':plan['source']},'headerLabels':{str(v):labels.get(v,'') for v in b.get('mapping').values()}}
+            key=self.server.hold('import',mode,plan)
+            safe={k:v for k,v in plan.items() if k not in ('items','_track')};safe.update(previewId=key,trackable=bool(plan.get('_track')),items=[{k:v for k,v in i.items() if k not in ('data','metrics')} for i in plan['items'][:150]],truncated=len(plan['items'])>150)
             return self.send(200,safe)
         if path=='/api/import/commit':
             if b.get('confirmed') is not True:raise AppError('Cần xác nhận bản xem trước trước khi nhập.')
             plan=self.server.held(b.get('previewId'),'import',mode)
             # Consistent SQLite checkpoint before import, never raw-copy a live DB.
             name=mode+'-before-import-'+uid()+'.thubackup';(store.directory/name).write_bytes(store.backup())
-            s,result=store.mutate(plan['revision'],b.get('requestId'),'import.commit',{'fingerprint':plan['fingerprint'],'partial':bool(b.get('allowPartial'))},lambda s:apply_plan(service,s,plan,clock,bool(b.get('allowPartial'))),clock.stamp());return self.send(200,{'state':service.decorate(s,mode),'result':result})
+            save=bool(b.get('saveSource')) and bool(plan.get('_track'))
+            def run(s):
+                result=apply_plan(service,s,plan,clock,bool(b.get('allowPartial')))
+                if plan.get('_track') and not result.get('replayed') and s['sources']:s['sources'][-1]['type']='Google Sheets'
+                if save:result['savedSource']=save_google_source(s,plan,clock)
+                return result
+            s,result=store.mutate(plan['revision'],b.get('requestId'),'import.commit',{'fingerprint':plan['fingerprint'],'partial':bool(b.get('allowPartial')),'saveSource':save},run,clock.stamp());return self.send(200,{'state':service.decorate(s,mode),'result':result})
         if path=='/api/google/client':
             return self.send(200,{'google':service.google.save_client(text(b.get('json'),True,20000))})
         if path=='/api/google/start':

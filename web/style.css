@@ -35,3 +35,4 @@ body{font-family:"Be Vietnam Pro","Segoe UI",-apple-system,BlinkMacSystemFont,Ar
 /* 0.4.8: thanh bên luôn tới được mục Tùy chỉnh trên màn hình thấp (MacBook Air + thanh bookmark). */
 .sidebar{overflow-y:auto;overscroll-behavior:contain}
 @media (max-height:820px){.little-note{display:none}.brand{padding-bottom:22px}}
+.tracking-source-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.tracking-result small{display:block}

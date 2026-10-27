@@ -33,7 +33,8 @@ Tool Thư đọc Google Sheets bằng quyền **chỉ xem** (`spreadsheets.reado
 3. Nếu thấy "Google chưa xác minh ứng dụng này": bấm **Nâng cao (Advanced)** → **Chuyển tới Tool Thư (không an toàn)**. Ứng dụng là của chính bạn nên an toàn.
 4. Tick quyền **Xem bảng tính Google Trang tính** → **Tiếp tục**.
 5. Trang báo **Kết nối thành công** rồi tự quay lại Tool Thư.
-6. Bấm **Nhập từ Google Sheet** → dán link sheet → chọn sheet, hàng tiêu đề, ánh xạ cột → xem trước → nhập.
+6. Bấm **Nhập từ Google Sheet** → dán link sheet → chọn sheet, hàng tiêu đề, ánh xạ cột → xem trước → tick **Lưu làm nguồn để bấm Cập nhật dữ liệu** → nhập.
+7. Lần sau khi sheet có thay đổi: bấm **Cập nhật dữ liệu** (Nguồn dữ liệu → thẻ Chủ động cập nhật khi cần). Tool đọc lại các sheet đã lưu; dòng bạn đã sửa trong tool được giữ nguyên.
 
 ## Lưu ý
 

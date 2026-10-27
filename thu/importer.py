@@ -197,13 +197,13 @@ def build_plan(book,sheet_name,header,template,mapping,options,state,clock):
         if not any(v not in (None,'','[ĐÃ ẨN]') for v in row):continue
         line=sheet['rowNumbers'][i];item={'row':line,'status':'create','message':'','changes':[]}
         try:
-            data={};target='';alias_code='';tid=''
+            data={};target='';alias_code='';tid='';fields=None
             if template=='teachers':
                 code=string(cell(row,'code'));name=string(cell(row,'name'))
                 if not code or not name:raise AppError('Thiếu mã/họ tên; dòng tiêu đề hoặc ghi chú không được coi là giáo viên.')
                 if SENSITIVE.search(fold(name)):raise AppError('Dòng có dấu hiệu chứa thông tin đăng nhập.')
                 limits={'code':80,'name':160,'level':120,'type':80,'phone':40,'email':160}
-                data={k:text(string(cell(row,k)),k in ('code','name'),limits[k]) for k in limits if k in mapping};data.update(status='active');key='teacher:'+fold(code);target='teachers'
+                data={k:text(string(cell(row,k)),k in ('code','name'),limits[k]) for k in limits if k in mapping};data.update(status='active');key='teacher:'+fold(code);target='teachers';fields=sorted(data.keys()-{'status'})
                 old=next((t for t in state['teachers'] if fold(t['code'])==fold(code)),None)
                 if old:data={**old,**data,'status':old['status']}
                 if old and fold(old['name'])!=fold(name) and policy!='overwrite':raise AppError('Cùng mã nhưng khác tên; cần đối chiếu trước khi chọn ghi đè.',400,'REVIEW')
@@ -238,6 +238,7 @@ def build_plan(book,sheet_name,header,template,mapping,options,state,clock):
                 if old is None:old=next((r for r in state[target] if r.get('importKey')==key),None)
             if key in seen:raise AppError('Trùng khóa nghiệp vụ trong cùng file; cần kiểm tra dòng thay vì tự xóa trùng.',400,'REVIEW')
             seen.add(key)
+            if fields is None:fields=sorted(k for k in data if k not in ('importKey','id','status','source'))
             if template=='metrics':
                 metrics=[];observation=string(cell(row,'sourceId')) or 'summary'
                 for k in KINDS:
@@ -283,7 +284,7 @@ def build_plan(book,sheet_name,header,template,mapping,options,state,clock):
                     if old and not known and item['status']=='duplicate':item['status']='update'
             if alias_code:
                 text(alias_code,True,80);text(source,True,180)
-            item.update(data=data,target=target,key=key,teacher=tid,aliasCode=alias_code,summary=(data.get('name') or data.get('title') or data.get('code') or data.get('detail') or (find(state,'teachers',tid)['name'] if tid else ''))[:160])
+            item.update(data=data,target=target,key=key,fields=fields,teacher=tid,aliasCode=alias_code,summary=(data.get('name') or data.get('title') or data.get('code') or data.get('detail') or (find(state,'teachers',tid)['name'] if tid else ''))[:160])
         except AppError as e:item.update(status='review' if e.code=='REVIEW' else 'error',message=str(e))
         items.append(item)
     fingerprint=digest([book['sha256'],sheet_name,header,template,mapping,options]);prior=next((b for b in state['importBatches'] if b['fingerprint']==fingerprint),None)
