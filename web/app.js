@@ -3,7 +3,7 @@ async function action(value){
  const [a,...rest]=value.split(':'),id=rest.join(':');
  if(a.startsWith('go-'))return navigate(a.slice(3));
  const handlers={
-  'tracking-run':runTracking,'google-client':googleClientForm,'google-connect':googleConnect,'google-disconnect':googleDisconnect,'google-import':googleImport,'tracking-fixture':trackingFixtureForm,'tracking-review':trackingReviewList,'tracking-issue':()=>trackingIssue(id),'tracking-remove':()=>trackingRemove(id),reload:()=>location.reload(),close:closeOverlay,'teacher-new':()=>teacherForm(),teacher:()=>teacherProfile(id),'teacher-edit':()=>teacherForm(id),'teacher-note':()=>noteForm(id),alias:()=>aliasForm(id),classes:classesModal,'class-new':()=>classForm(),class:()=>classForm(id),
+  'tracking-run':runTracking,'google-client':googleClientForm,'google-connect':googleConnect,'google-disconnect':googleDisconnect,'google-import':googleImport,'tracking-fixture':trackingFixtureForm,'tracking-review':trackingReviewList,'tracking-issue':()=>trackingIssue(id),'tracking-remove':()=>trackingRemove(id),'group-setup':groupSetupForm,'group-remove':()=>groupRemove(id),'group-settings':groupSettingsForm,'group-tab':()=>{groupTab=id;render();},'group-past':()=>{groupShowPast=!groupShowPast;render();},reload:()=>location.reload(),close:closeOverlay,'teacher-new':()=>teacherForm(),teacher:()=>teacherProfile(id),'teacher-edit':()=>teacherForm(id),'teacher-note':()=>noteForm(id),alias:()=>aliasForm(id),classes:classesModal,'class-new':()=>classForm(),class:()=>classForm(id),
   'task-new':()=>taskForm(),task:()=>taskForm(id),'task-teacher':()=>taskForm('',id),'task-toggle':async()=>{const t=rowId('tasks',id);await command('task.status',{id,status:t.status==='done'?'todo':'done'});toast('Đã lưu trạng thái công việc.');},
   'teacher-filter':()=>{teacherFilter=id;render();},'task-filter':()=>{taskFilter=id;render();},'process-filter':()=>{processFilter=id;render();},
   templates:templatesModal,'template-new':templateForm,'template-generate':generateForm,'process-new':()=>processForm(),process:()=>processForm(id),milestone:()=>milestoneForm(id),
@@ -23,6 +23,7 @@ document.addEventListener('click',async e=>{const target=e.target.closest('butto
  catch(err){delete target.dataset.actionBusy;toast(err.message);}
 });
 document.addEventListener('change',async e=>{const el=e.target;try{
+ if(el.id==='group-quarter'){groupQuarter=el.value;render();return;}
  if(el.dataset.trackSource){trackingSelection=[...document.querySelectorAll('[data-track-source]:checked')].map(x=>x.dataset.trackSource);return;}
  if(el.id==='data-mode'){
   if(writing){el.value=mode;throw new Error('Đang lưu dữ liệu. Chờ thao tác hoàn tất rồi đổi chế độ.');}

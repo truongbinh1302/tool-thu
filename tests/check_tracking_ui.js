@@ -5,7 +5,7 @@ const fixture=JSON.parse(cp.execFileSync(process.env.TOOL_THU_PYTHON||'python3',
 let requests=[],resolveFetch,toastMessages=[];
 const context={fixture,assert,localStorage:{getItem:()=>null},crypto:require('crypto').webcrypto,AbortController,setTimeout,clearTimeout,console,fetch:async(url,options)=>{requests.push({url,body:options.body});return new Promise(resolve=>{resolveFetch=()=>resolve({ok:true,json:async()=>fixture.after});});},requests,toastMessages};
 vm.createContext(context);
-vm.runInContext(['graphics','core','views','forms','import','tracking'].map(n=>fs.readFileSync(path.join(root,'web',n+'.js'),'utf8')).join('\n')+`;data=fixture.before;mode='demo';render=()=>{};toast=s=>toastMessages.push(s);`,context);
+vm.runInContext(['graphics','core','views','forms','import','tracking','google','group'].map(n=>fs.readFileSync(path.join(root,'web',n+'.js'),'utf8')).join('\n')+`;data=fixture.before;mode='demo';render=()=>{};toast=s=>toastMessages.push(s);`,context);
 (async()=>{
  assert.equal(requests.length,0,'Loading modules must not read sources');
  const first=vm.runInContext('runTracking()',context);await Promise.resolve();await Promise.resolve();

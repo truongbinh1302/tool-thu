@@ -2,6 +2,7 @@
 from copy import deepcopy
 import threading
 from .common import AppError,Clock,text,uid,digest,monday
+from . import group
 
 def tracking_state(state):
     return state.setdefault('tracking',{'sources':[],'runs':[],'reviewQueue':[],'lastAttempt':'','lastSuccess':'','lastApplied':''})
@@ -133,7 +134,9 @@ class TrackingMixin:
                 return {'state':self.decorate(s,mode),'result':{**run,'replayed':True}}
             initial=store.read()
             if type(expected)!=int or initial['_revision']!=expected:raise AppError('Dữ liệu đã thay đổi. Kiểm tra bản mới trước khi bấm cập nhật lại.',409,'STALE')
-            cfg=tracking_state(initial);selected=[next((s for s in cfg['sources'] if s['id']==sid),None) for sid in source_ids]
+            cfg=tracking_state(initial);use_group='group' in source_ids
+            if use_group and not group.configured(initial):raise AppError('Chưa thiết lập Bộ sheet của tổ. Vào Nguồn dữ liệu → Bộ sheet của tổ để dán link.')
+            selected=[next((s for s in cfg['sources'] if s['id']==sid),None) for sid in source_ids if sid!='group']
             if any(s is None or not s.get('approved') or s.get('adapter')!='googleSheets' for s in selected):raise AppError('Nguồn chưa được lưu. Hãy nhập Google Sheet và tick "Lưu làm nguồn" trước.')
             if not self.google.status().get('connected'):raise AppError('Chưa kết nối Google (hoặc phiên đã hết hạn). Vào Nguồn dữ liệu → Kết nối Google rồi bấm lại.',409,'GOOGLE_LOGIN')
             from .importer import build_plan,columns
@@ -148,9 +151,16 @@ class TrackingMixin:
                     plan=build_plan(book,source['sheet'],source['header'],source['template'],source['mapping'],{**source.get('options',{}),'policy':'overwrite'},initial,clock)
                     plans.append((source,plan))
                 except AppError as e:failures.append({'id':source['id'],'name':source['name'],'status':'ERROR','message':str(e),'code':e.code})
+            group_parsed,group_failures=group.read_all(self.google,group.group_state(initial)['sources']) if use_group else ({},{})
+            for kind,e in group_failures.items():failures.append({'id':'group:'+kind,'name':group.NAMES[kind],'status':'ERROR','message':str(e),'code':e.code})
             def commit(state):
                 from .importer import apply_plan
                 conf=tracking_state(state);results=list(failures);applied=0
+                if group_parsed:
+                    summary=group.apply_parsed(self,state,group_parsed,clock)
+                    for kind in group.KINDS:
+                        if kind in summary:results.append({'id':'group:'+kind,'name':group.NAMES[kind],'status':'SUCCESS','counts':None,'appliedRecords':summary[kind]['kept'],'message':group.message(kind,summary[kind])})
+                    applied+=sum(x['kept'] for x in summary.values())
                 for source,plan in plans:
                     persisted=next(x for x in conf['sources'] if x['id']==source['id']);baseline=persisted.setdefault('baseline',{})
                     kept=0;valid=[];notes=[]
@@ -178,16 +188,63 @@ class TrackingMixin:
                     waiting=counts['review']+counts['error']
                     message='Đã đọc lại sheet: '+str(counts['create'])+' dòng mới, '+str(counts['update'])+' dòng thay đổi'+(', giữ '+str(kept)+' dòng bạn đã sửa' if kept else '')+(', '+str(waiting)+' dòng cần kiểm tra (chưa nhập)' if waiting else '')+'.'
                     results.append({'id':source['id'],'name':source['name'],'status':'REVIEW' if waiting else 'SUCCESS','counts':counts,'appliedRecords':count,'message':message,'notes':notes[:20]})
-                status='ERROR' if not plans else 'PARTIAL' if failures else 'REVIEW' if any(r['status']=='REVIEW' for r in results) else 'SUCCESS'
+                ok=bool(plans or group_parsed)
+                status='ERROR' if not ok else 'PARTIAL' if failures else 'REVIEW' if any(r['status']=='REVIEW' for r in results) else 'SUCCESS'
                 run={'id':request_id,'status':status,'stamp':clock.stamp(),'sourceIds':source_ids,'sources':results,'appliedRecords':applied}
                 conf['lastAttempt']=clock.stamp()
-                if plans and not failures:conf['lastSuccess']=clock.stamp()
+                if ok and not failures:conf['lastSuccess']=clock.stamp()
                 if applied:conf['lastApplied']=clock.stamp()
                 conf['runs']=(conf['runs']+[run])[-20:]
                 return run
             state,result=store.mutate(expected,request_id,'tracking.run',payload,commit,clock.stamp())
             return {'state':self.decorate(state,mode),'result':result}
         finally:self.tracking_locks[mode].release()
+
+    def group_setup(self,mode,expected,request_id,links):
+        """Save the team's sheet links: read each once now (button press), find its table, apply it."""
+        if not isinstance(links,dict) or not links or any(k not in group.KINDS or not isinstance(v,str) for k,v in links.items()):raise AppError('Danh sách link không hợp lệ.')
+        links={k:text(v,maximum=2000).strip() for k,v in links.items() if v.strip()}
+        if not links:raise AppError('Dán ít nhất một link Google Sheet.')
+        store=self.stores[mode];clock=Clock(mode)
+        if not self.google.status().get('connected'):raise AppError('Chưa kết nối Google. Bấm Kết nối Google trước.',409,'GOOGLE_LOGIN')
+        if not self.tracking_locks[mode].acquire(blocking=False):raise AppError('Một lượt cập nhật đang chạy. Hãy chờ lượt đó hoàn tất.',423,'TRACK_BUSY')
+        try:
+            payload={'links':links}
+            if store.request_seen(request_id,'group.setup',payload):
+                s=store.read();return {'state':self.decorate(s,mode),'result':{'replayed':True}}
+            initial=store.read()
+            if type(expected)!=int or initial['_revision']!=expected:raise AppError('Dữ liệu đã thay đổi. Tải lại rồi lưu lại.',409,'STALE')
+            if 'teachers' not in links and not group.configured(initial):raise AppError('Cần link "Danh sách giáo viên" trước: các sheet khác được lọc theo danh sách này.')
+            parsed,infos,errors={},{},{}
+            for kind in group.KINDS:
+                if kind not in links:continue
+                try:parsed[kind],infos[kind]=group.read_kind(self.google,kind,links[kind])
+                except AppError as e:errors[kind]=e
+            if 'teachers' in errors and not group.configured(initial):raise AppError('Danh sách giáo viên: '+str(errors['teachers']),409,errors['teachers'].code)
+            def commit(state):
+                g=group.group_state(state)
+                for kind,info in infos.items():
+                    g['sources'][kind]={'spreadsheetId':info['spreadsheetId'],'title':info['title'],'sheet':parsed[kind]['sheet'],'header':parsed[kind]['header'],'link':links[kind],'saved':clock.stamp()}
+                summary=group.apply_parsed(self,state,parsed,clock)
+                return {'saved':sorted(infos),'summary':{k:{'message':group.message(k,v),'sheet':g['sources'][k]['sheet'],'title':g['sources'][k]['title']} for k,v in summary.items()},'errors':{k:str(e) for k,e in errors.items()}}
+            state,result=store.mutate(expected,request_id,'group.setup',payload,commit,clock.stamp())
+            return {'state':self.decorate(state,mode),'result':result}
+        finally:self.tracking_locks[mode].release()
+
+    def cmd_group_remove(self,s,p,clock):
+        g=group.group_state(s);kind=p.get('kind')
+        if kind not in group.KINDS or kind not in g['sources']:raise AppError('Không tìm thấy sheet này.',404)
+        if kind=='teachers' and len(g['sources'])>1:raise AppError('Gỡ các sheet khác trước khi gỡ Danh sách giáo viên.')
+        g['sources'].pop(kind);g['data'].pop(kind,None);return {'kind':kind}
+
+    def cmd_group_settings(self,s,p,clock):
+        g=group.group_state(s);pics=p.get('pic',g['settings']['pic'])
+        if not isinstance(pics,list) or not pics or len(pics)>10 or any(not isinstance(x,str) or not x.strip() for x in pics):raise AppError('Chọn ít nhất một PIC.')
+        try:threshold=float(p.get('passThreshold',g['settings']['passThreshold']))
+        except (TypeError,ValueError):raise AppError('Ngưỡng Pass không hợp lệ.')
+        if not 0<=threshold<=100:raise AppError('Ngưỡng Pass phải từ 0 đến 100%.')
+        g['settings']={'pic':[text(x,True,60) for x in pics],'passThreshold':threshold}
+        return {'settings':g['settings']}
 
     def cmd_tracking_source_remove(self,s,p,clock):
         cfg=tracking_state(s);source=next((x for x in cfg['sources'] if x['id']==p.get('id')),None)

@@ -2,17 +2,19 @@
 let trackingBusy=false,trackingSelection=null;
 const trackingLabels={SUCCESS:'Đã đọc nguồn',REVIEW:'Cần đối chiếu',PARTIAL:'Một số nguồn bị lỗi',ERROR:'Chưa đọc được nguồn'};
 const stampLabel=s=>s?new Date(s).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour12:false}):'Chưa có';
+function trackingSources(){const list=[...(data.tracking?.sources||[])];if(mode!=='demo'&&data.group?.sources?.teachers)list.unshift({id:'group',name:'Bộ sheet của tổ',group:true});return list;}
 function trackingButton(){return `<button type="button" class="btn primary" data-action="tracking-run" ${trackingBusy?'disabled aria-busy="true"':''}>${icon(trackingBusy?'clock':'refresh')}${trackingBusy?'Đang cập nhật…':'Cập nhật dữ liệu'}</button>`;}
 function trackingPanel(){
  const t=data.tracking||{sources:[],runs:[],reviewQueue:[]},last=t.runs.at(-1),pending=t.reviewQueue.filter(q=>q.status==='pending'),demo=mode==='demo';
  const description=demo?'Thử luồng bằng nguồn giả lập trong máy. Chuẩn bị/đổi nguồn thử không đọc dữ liệu; bấm Cập nhật dữ liệu mới áp dụng vào kho dùng thử.':'Các Google Sheet đã lưu làm nguồn được liệt kê bên dưới. Bấm Cập nhật dữ liệu để đọc lại các sheet đã tick: dòng mới được thêm, dòng đổi được cập nhật, dòng bạn đã sửa trong tool được giữ nguyên. Tool không tự đọc ngầm.';
  const sourceRow=s=>demo
   ?`<label class="check-label"><input type="checkbox" data-track-source="${s.id}" ${trackingSelection===null||trackingSelection.includes(s.id)?'checked':''}><span>${esc(s.name)} · ${esc({baseline:'Số liệu ban đầu',changed:'Số liệu đã đổi',conflict:'Số liệu mâu thuẫn',missing:'Ô trống',offline:'Mất kết nối',denied:'Hết quyền'}[s.scenario]||s.scenario)}<small class="muted"> Nguồn giả lập · Chưa kết nối Google</small></span></label>`
+  :s.group?`<div class="tracking-source-row"><label class="check-label"><input type="checkbox" data-track-source="group" ${trackingSelection===null||trackingSelection.includes('group')?'checked':''}><span>${esc(s.name)}<small class="muted"> ${Object.keys(data.group.sources).length}/5 sheet · đọc lần cuối ${esc(stampLabel(data.group.lastRead))}</small></span></label>${btn('Thiết lập','group-setup','text')}</div>`
   :`<div class="tracking-source-row"><label class="check-label"><input type="checkbox" data-track-source="${s.id}" ${trackingSelection===null||trackingSelection.includes(s.id)?'checked':''}><span>${esc(s.name)}<small class="muted"> ${esc(templateNames[s.template]||s.template)} · hàng tiêu đề ${s.header} · đọc lần cuối ${esc(stampLabel(s.lastSuccess))}</small></span></label>${btn('Gỡ nguồn','tracking-remove:'+s.id,'text')}</div>`;
  const empty=demo?'<p class="muted">Chưa chuẩn bị nguồn thử.</p>':'<p class="muted">Chưa có nguồn nào. Bấm <strong>Nhập từ Google Sheet</strong>, đến bước 3 tick <strong>Lưu làm nguồn để bấm Cập nhật dữ liệu</strong> rồi nhập.</p>';
  const counts=c=>c?`<small>Dòng: ${c.create} mới · ${c.update} sửa · ${c.duplicate} không đổi${c.kept?' · '+c.kept+' giữ bản bạn sửa':''} · ${c.review+c.error} cần kiểm tra</small>`:'';
  const extra=demo?btn('Chuẩn bị / đổi nguồn thử','tracking-fixture')+btn('Hàng chờ đối chiếu ('+pending.length+')','tracking-review'):(data._google?.connected?btn('Nhập từ Google Sheet','google-import','','upload'):'')+btn('Nhập file từ máy','import');
- return card('Chủ động cập nhật khi cần',`<p class="muted">${esc(description)}</p><div class="tracking-summary"><p><small>Lần đọc thành công gần nhất</small><strong>${esc(stampLabel(t.lastSuccess))}</strong></p><p><small>Chế độ theo dõi</small><strong>Chỉ khi bạn bấm nút</strong></p></div><div class="tracking-source-list">${t.sources.map(sourceRow).join('')||empty}</div><div class="inline-actions">${trackingButton()}${extra}</div>${last?`<div class="tracking-result" role="status"><strong>${esc(trackingLabels[last.status]||last.status)}</strong> · ${last.appliedRecords} bản ghi ${demo?'chỉ số ':''}được lưu<small>${esc(stampLabel(last.stamp))}</small>${last.sources.map(s=>`<p><strong>${esc(s.name)}</strong> · ${esc(s.message)}${counts(s.counts)}${(s.notes||[]).slice(0,5).map(n=>`<small>${esc(n)}</small>`).join('')}</p>`).join('')}</div>`:''}`);
+ return card('Chủ động cập nhật khi cần',`<p class="muted">${esc(description)}</p><div class="tracking-summary"><p><small>Lần đọc thành công gần nhất</small><strong>${esc(stampLabel(t.lastSuccess))}</strong></p><p><small>Chế độ theo dõi</small><strong>Chỉ khi bạn bấm nút</strong></p></div><div class="tracking-source-list">${trackingSources().map(sourceRow).join('')||empty}</div><div class="inline-actions">${trackingButton()}${extra}</div>${last?`<div class="tracking-result" role="status"><strong>${esc(trackingLabels[last.status]||last.status)}</strong> · ${last.appliedRecords} bản ghi ${demo?'chỉ số ':''}được lưu<small>${esc(stampLabel(last.stamp))}</small>${last.sources.map(s=>`<p><strong>${esc(s.name)}</strong> · ${esc(s.message)}${counts(s.counts)}${(s.notes||[]).slice(0,5).map(n=>`<small>${esc(n)}</small>`).join('')}</p>`).join('')}</div>`:''}`);
 }
 function trackingFixtureForm(){
  if(trackingBusy)return toast('Đang cập nhật; hãy chờ lượt hiện tại.');
@@ -30,7 +32,7 @@ async function trackingRemove(id){
 }
 async function runTracking(){
  if(trackingBusy||writing){toast('Đang có thao tác lưu. Vui lòng chờ.');return;}
- const sources=data.tracking?.sources||[];if(!sources.length)return mode==='demo'?trackingFixtureForm():trackingUnavailable();
+ const sources=trackingSources();if(!sources.length)return mode==='demo'?trackingFixtureForm():trackingUnavailable();
  const selected=sources.filter(s=>trackingSelection===null||trackingSelection.includes(s.id)).map(s=>s.id).sort();
  if(!selected.length){toast('Chọn ít nhất một nguồn để cập nhật.');return;}
  trackingBusy=true;writing++;render();

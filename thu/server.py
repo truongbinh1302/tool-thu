@@ -145,6 +145,7 @@ class Handler(BaseHTTPRequestHandler):
         except AppError:
             self.discard_rejected_body();raise
         b=self.body();path=urlsplit(self.path).path;service=self.server.service;store=service.stores[mode];clock=Clock(mode)
+        if path=='/api/group/setup':return self.send(200,service.group_setup(mode,b.get('revision'),b.get('requestId'),b.get('links')))
         if path=='/api/tracking/run':return self.send(200,service.track(mode,b.get('revision'),b.get('requestId'),b.get('sourceIds')))
         if path=='/api/commands':return self.send(200,service.command(mode,b.get('revision'),b.get('requestId'),text(b.get('name'),True,80),b.get('payload',{})))
         if path=='/api/backup':

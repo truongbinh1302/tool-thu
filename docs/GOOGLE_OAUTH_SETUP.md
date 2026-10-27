@@ -36,6 +36,14 @@ Tool Thư đọc Google Sheets bằng quyền **chỉ xem** (`spreadsheets.reado
 6. Bấm **Nhập từ Google Sheet** → dán link sheet → chọn sheet, hàng tiêu đề, ánh xạ cột → xem trước → tick **Lưu làm nguồn để bấm Cập nhật dữ liệu** → nhập.
 7. Lần sau khi sheet có thay đổi: bấm **Cập nhật dữ liệu** (Nguồn dữ liệu → thẻ Chủ động cập nhật khi cần). Tool đọc lại các sheet đã lưu; dòng bạn đã sửa trong tool được giữ nguyên.
 
+## Bộ sheet của tổ (5 sheet cố định)
+
+1. **Nguồn dữ liệu** → thẻ **Bộ sheet của tổ** → **Dán link các sheet**.
+2. Dán link: Danh sách giáo viên (bắt buộc), Quy trình xử lý 14 ngày, Quản lý chỉ số CCBTVN, Kiểm soát tỷ lệ Pass band cao, Xử lý lỗi GV → **Lưu và đọc thử**.
+3. Tool tự tìm trang/hàng tiêu đề/cột và báo số dòng của tổ. Trang "Danh sách GV TT" là danh sách chuẩn; các sheet khác chỉ giữ GV trong danh sách (khớp theo họ tên).
+4. Xem ở trang **Theo dõi tổ**; deadline sắp tới có trên **Tổng quan**. Lần sau chỉ cần bấm **Cập nhật dữ liệu**.
+5. Đổi PIC hiển thị hoặc ngưỡng Pass: Theo dõi tổ → **Chọn PIC** / **Đổi ngưỡng**.
+
 ## Lưu ý
 
 - Sheet lấy dữ liệu bằng IMPORTRANGE/QUERY từ file khác: tài khoản đăng nhập cần quyền xem **cả file gốc**.

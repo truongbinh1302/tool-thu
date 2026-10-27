@@ -36,3 +36,9 @@ body{font-family:"Be Vietnam Pro","Segoe UI",-apple-system,BlinkMacSystemFont,Ar
 .sidebar{overflow-y:auto;overscroll-behavior:contain}
 @media (max-height:820px){.little-note{display:none}.brand{padding-bottom:22px}}
 .tracking-source-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.tracking-result small{display:block}
+.deadline-list{display:grid;gap:10px}.deadline-row{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--surface-soft,#fbf2f6)}.deadline-row small{display:block}.deadline-date strong{display:block}
+.text-link{color:var(--primary,#b0507a);text-decoration:none;display:inline-flex;gap:4px;align-items:center;white-space:nowrap}.text-link svg{width:14px;height:14px}
+.subhead{margin:18px 0 8px;font-size:14px}
+.pass-table th.stage-head{text-align:center;background:#f6e3ec}.pass-table td{min-width:90px;vertical-align:top}
+.flag-low{background:#fde2e4!important}.flag-support{background:#fff1d6!important}.flag-row td:first-child{box-shadow:inset 3px 0 0 #c9577f}.legend{padding:1px 8px;border-radius:8px}
+@media (max-width:640px){.deadline-row{grid-template-columns:1fr}}

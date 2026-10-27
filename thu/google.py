@@ -217,7 +217,7 @@ class GoogleClient:
                 raise AppError('Phiên đăng nhập Google đã hết hạn. Hãy bấm Kết nối Google lại.', 401, 'GOOGLE_LOGIN')
             raise AppError('Google Sheets đang lỗi (' + str(status) + '). Bấm thử lại sau; dữ liệu đã lưu được giữ nguyên.', 503, 'SOURCE_ERROR')
 
-    def read_book(self, link, tabs=None):
+    def read_book(self, link, tabs=None, probe=None):
         """Read a spreadsheet as an importer 'book' (same shape as importer.read_workbook)."""
         sid = spreadsheet_id(link)
         self.read_count += 1
@@ -230,7 +230,8 @@ class GoogleClient:
             names = list(tabs)
         if not names:
             raise AppError('Bảng tính không có sheet nào.')
-        query = [('ranges', "'" + n.replace("'", "''") + "'") for n in names[:30]]
+        suffix = ('!1:' + str(int(probe))) if probe else ''  # probe: only the first rows, to find the header
+        query = [('ranges', "'" + n.replace("'", "''") + "'" + suffix) for n in names[:30]]
         query += [('valueRenderOption', 'UNFORMATTED_VALUE'), ('dateTimeRenderOption', 'SERIAL_NUMBER'), ('majorDimension', 'ROWS')]
         values = self._get(SHEETS_URL + sid + '/values:batchGet?' + urllib.parse.urlencode(query))
         sheets = []

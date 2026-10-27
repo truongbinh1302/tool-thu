@@ -1,5 +1,7 @@
 # Tool Thư · Mây Teacher Space
 
+**0.4.9 (27/10/2026):** **Bộ sheet của tổ** và trang **Theo dõi tổ**. Ở Nguồn dữ liệu dán link 5 Google Sheet một lần (Danh sách giáo viên, Quy trình xử lý 14 ngày, Chỉ số CCBTVN, Tỷ lệ Pass band cao, Xử lý lỗi GV). Tool tự tìm trang, hàng tiêu đề và cột; trang "Danh sách GV TT" là danh sách chuẩn, các sheet khác chỉ giữ dòng của GV trong danh sách (khớp theo họ tên). Mỗi lần bấm **Cập nhật dữ liệu**, tool đọc lại và thay bằng dữ liệu mới nhất (dòng bị xóa ở nguồn cũng biến mất). Deadline xử lý 14 ngày của PIC đã chọn được sắp theo ngày, hiện trên Tổng quan, tự ẩn khi qua hạn. CCBTVN và Pass lưu mọi cột có thông tin (bỏ cột #N/A); Pass tô lớp dưới ngưỡng ở giai đoạn mới nhất và lớp có đề xuất hỗ trợ. Lỗi GV lưu mã lớp, buổi, nội dung lỗi, chi tiết lỗi, ngày, quý; đếm lỗi theo quý với mức xử lý 1 nhắc nhở · 2 cảnh cáo · 3 trừ 1/2 công · từ 4 trừ 1 công.
+
 **0.4.8 (27/10/2026):** nút **Cập nhật dữ liệu** chạy được trong kho dữ liệu thật. Khi nhập từ Google Sheet, ở bước 3 tick **Lưu làm nguồn để bấm Cập nhật dữ liệu**; từ đó mỗi lần bấm nút, tool đọc lại các sheet đã lưu một lần: thêm dòng mới, cập nhật dòng đã đổi, giữ nguyên dòng bạn đã sửa trong tool, không xóa gì. Nếu cột trong sheet đổi tên/vị trí, tool báo lỗi và giữ dữ liệu cũ. Không có đọc ngầm. Thanh bên cuộn được trên màn hình thấp.
 
 **0.4.7 (27/10/2026):** đọc đúng cột có tiêu đề gộp 2 hàng (vd. Deadline xử lý, PIC, Phương án xử lý) và cột chỉ có dữ liệu ở các dòng sau; tự chọn sheet nhiều dữ liệu nhất; hiện tên sheet đang dùng ở bước ánh xạ.
@@ -8,7 +10,7 @@
 
 **0.4.5 (26/10/2026):** có bản app Mac chip Apple (`Tool Thư.app`, không cần cài Python), build và kiểm thử tự động trên macOS bằng GitHub Actions. Sửa lỗi server mở chậm/treo trên macOS do tra ngược DNS khi khởi động. Không đổi giao diện, schema (vẫn 2) hay dữ liệu.
 
-Bản local 0.4.8 dành cho tổ giáo viên, giao diện hồng pastel. Đây là bản để thử và góp ý trước nghiệm thu; đã đọc được Google Sheets (chỉ xem), chưa kết nối iCloud.
+Bản local 0.4.9 dành cho tổ giáo viên, giao diện hồng pastel. Đây là bản để thử và góp ý trước nghiệm thu; đã đọc được Google Sheets (chỉ xem), chưa kết nối iCloud.
 
 Bản 0.4.4 sửa nhập giờ Excel dạng số, từ chối CSV hỏng/tệp rỗng và phát hiện dòng thiếu ngày, trường quá dài, hạn lớp trước ngày tiếp nhận ngay ở bản xem trước. Ngày Excel ngoài phạm vi báo lỗi dữ liệu. Sửa phản hồi 401/403 đôi lúc bị Windows ngắt kết nối khi POST có body chưa đọc hết; kiểm tra phiên/Origin/CSRF giữ nguyên. Không đổi schema (vẫn 2), thiết kế hoặc cách track thủ công.
 

@@ -3,7 +3,7 @@ let data, mode='demo', csrf='', page='overview', period='', snapshotId='', teach
 let teacherType='all',taskTeacher='',taskCategory='',taskClass='';
 const pending=new Map();
 try{mode=localStorage.getItem('tool-thu-mode')==='real'?'real':'demo';}catch{}
-const pages=[['overview','Tổng quan','grid'],['teachers','Đội ngũ giáo viên','users'],['tasks','Công việc của tôi','checkSquare'],['process','Hồ sơ xử lý lớp','clock'],['reports','Báo cáo & chỉ số','chart'],['meetings','Họp & chia sẻ','meeting'],['calendar','Lịch của tôi','calendar'],['sources','Nguồn dữ liệu','folder']];
+const pages=[['overview','Tổng quan','grid'],['teachers','Đội ngũ giáo viên','users'],['tasks','Công việc của tôi','checkSquare'],['process','Hồ sơ xử lý lớp','clock'],['team','Theo dõi tổ','list'],['reports','Báo cáo & chỉ số','chart'],['meetings','Họp & chia sẻ','meeting'],['calendar','Lịch của tôi','calendar'],['sources','Nguồn dữ liệu','folder']];
 const kinds={attendance:'Chuyên cần',homework:'Có làm BTVN',skill:'Đạt năng lực',homework_standard:'BTVN đạt chuẩn',homework_skill:'Đạt năng lực BTVN',student_skill:'Học viên đạt năng lực'};
 const labels={NO_DATA:'Chưa có dữ liệu',INSUFFICIENT_DATA:'Thiếu số liệu gốc',NEEDS_REVIEW:'Chờ đối chiếu/quy tắc',PASS:'Đạt ngưỡng',BELOW_THRESHOLD:'Cần hỗ trợ',OK:'Có số đếm'};
 const statusName={todo:'Chưa bắt đầu',doing:'Đang thực hiện',done:'Hoàn thành'};
