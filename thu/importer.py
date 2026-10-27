@@ -145,14 +145,18 @@ def columns(book,sheet_name,header,template):
     if template not in FIELDS:raise AppError('Mẫu nhập không hợp lệ.')
     if header not in sheet['rowNumbers']:raise AppError('Hàng tiêu đề phải có dữ liệu trong sheet.')
     index=sheet['rowNumbers'].index(header);labels=sheet['rows'][index];cols=[];mapping={}
-    width=max([len(labels)]+[len(r) for r in sheet['rows'][index+1:index+7]])
+    body=sheet['rows'][index+1:];above=sheet['rows'][:index]
+    def filled(v):return v not in (None,'','[ĐÃ ẨN]')
+    width=max([len(labels)]+[len(r) for r in body])
     for i in range(width):
         label=labels[i] if len(labels)>i else None
         if label=='[ĐÃ ẨN]':continue
         if label in (None,''):
-            if not any(len(r)>i and r[i] not in (None,'','[ĐÃ ẨN]') for r in sheet['rows'][index+1:index+7]):continue
-            label='Cột '+str(i+1)+' (không tiêu đề)'
-        cols.append({'index':i,'label':str(label),'samples':[str(r[i])[:120] for r in sheet['rows'][index+1:index+5] if len(r)>i and r[i] is not None and r[i]!='[ĐÃ ẨN]'][:3]})
+            # A header cell merged vertically keeps its text in the top cell only: use the nearest one above.
+            label=next((r[i] for r in reversed(above) if len(r)>i and filled(r[i])),None)
+            if not any(len(r)>i and filled(r[i]) for r in body):continue
+            if label in (None,'','[ĐÃ ẨN]'):label='Cột '+str(i+1)+' (không tiêu đề)'
+        cols.append({'index':i,'label':str(label),'samples':[str(r[i])[:120] for r in body if len(r)>i and filled(r[i])][:3]})
     for field in FIELDS[template]:
         terms=ALIASES.get('code_case' if field=='code' and template=='cases' else field,[])
         matches=[c['index'] for c in cols if fold(c['label']) in terms]
