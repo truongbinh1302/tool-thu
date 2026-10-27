@@ -33,6 +33,7 @@ function groupDeadlineCard(){
 function teamPage(){
  const g=grp();
  const head=heading('Theo dõi tổ','Dữ liệu đọc từ các Google Sheet của tổ, chỉ gồm giáo viên trong danh sách của Thư.',trackingButton()+btn('Thiết lập sheet','group-setup','secondary','link'));
+ if(mode==='demo')return heading('Theo dõi tổ','Dữ liệu đọc từ các Google Sheet của tổ, chỉ gồm giáo viên trong danh sách của Thư.')+modeBanner()+card('Chỉ có ở Dữ liệu thật','<p class="muted">Bộ sheet của tổ đọc Google Sheet thật nên chỉ dùng trong kho Dữ liệu thật. Chuyển "Dữ liệu thật" ở góc trên để thiết lập.</p>');
  if(!g.sources.teachers)return head+modeBanner()+card('Chưa thiết lập Bộ sheet của tổ',`<p class="muted">Dán link 5 Google Sheet một lần (Danh sách giáo viên, Quy trình 14 ngày, Chỉ số CCBTVN, Tỷ lệ Pass band cao, Xử lý lỗi GV). Tool tự tìm đúng trang, hàng tiêu đề và cột. Từ đó chỉ cần bấm <strong>Cập nhật dữ liệu</strong>.</p><div class="inline-actions">${data._google?.connected?btn('Dán link các sheet','group-setup','primary','link'):btn('Kết nối Google trước','go-sources','primary')}</div>`);
  const tabs=groupKinds.filter(([k])=>k!=='teachers').concat([['teachers','Danh sách GV']]);
  const body={deadlines:groupDeadlinesView,homework:()=>groupTableView('homework'),pass:groupPassView,errors:groupErrorsView,teachers:groupTeachersView}[groupTab]||groupDeadlinesView;
@@ -98,8 +99,9 @@ function groupSetupForm(){
  if(!data._google?.connected)return toast('Kết nối Google trước (Nguồn dữ liệu → Google Sheets).');
  const g=grp();
  formModal('Bộ sheet của tổ — dán link',notice('Dán link Google Sheet (bản Thư xem được). Có thể để trống sheet chưa có; link Danh sách giáo viên là bắt buộc lần đầu. Tool đọc mỗi link một lần ngay bây giờ để tìm đúng bảng.')+groupKinds.map(([k,name,hint])=>field(name+(k==='teachers'?' *':''),k,g.sources[k]?.link||'','url',`placeholder="https://docs.google.com/spreadsheets/d/…" ${k==='teachers'&&!g.sources.teachers?'required':''}`)+`<p class="helper-text">${esc(hint)}</p>`).join(''),async v=>{
-  const links={};groupKinds.forEach(([k])=>{const s=(v[k]||'').trim();if(s&&s!==(g.sources[k]?.link||''))links[k]=s;});
-  if(!Object.keys(links).length){closeOverlay();return toast('Không có link mới.');}
+  // Gửi lại cả link cũ: tool dò lại trang/hàng tiêu đề (hữu ích khi sheet đổi bố cục).
+  const links={};groupKinds.forEach(([k])=>{const s=(v[k]||'').trim();if(s)links[k]=s;});
+  if(!Object.keys(links).length)throw new Error('Dán ít nhất link Danh sách giáo viên.');
   groupBusy=true;writing++;
   try{
    const r=await api('/api/group/setup',{revision:data._revision,requestId:crypto.randomUUID(),links},{timeout:180000});accept(r.state);closeOverlay();render();

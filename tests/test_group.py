@@ -211,6 +211,53 @@ class GroupTest(unittest.TestCase):
         self.assertNotIn('pass', self.g()['sources'])
         self.assertNotIn('pass', self.g()['data'])
 
+    def test_renamed_tab_is_found_again(self):
+        self.setup_all()
+        tabs = self.fake.books[IDS['errors']]['tabs']
+        tabs['Lỗi GV 2026'] = tabs.pop('Danh sách lỗi')
+        r = self.svc.track('real', self.rev(), uid(), ['group'])['result']
+        self.assertEqual(r['status'], 'SUCCESS', r)
+        self.assertEqual(self.g()['sources']['errors']['sheet'], 'Lỗi GV 2026')
+        self.assertEqual(len(self.g()['data']['errors']['rows']), 4)
+
+    def test_header_moved_down_is_found(self):
+        self.setup_all()
+        tab = self.fake.books[IDS['homework']]['tabs']['Sheet1']
+        tab.insert(0, ['Ghi chú mới của nhóm'])
+        self.svc.track('real', self.rev(), uid(), ['group'])
+        self.assertEqual(self.g()['sources']['homework']['header'], 4)
+        self.assertEqual(len(self.g()['data']['homework']['rows']), 1)
+
+    def test_demo_store_cannot_use_team_sheets(self):
+        with self.assertRaises(AppError) as e:
+            self.svc.group_setup('demo', self.svc.stores['demo'].read()['_revision'], uid(), {'teachers': 'https://docs.google.com/spreadsheets/d/' + IDS['teachers']})
+        self.assertEqual(e.exception.code, 'DEFERRED')
+
+    def test_long_teacher_fields_are_trimmed_not_blocking(self):
+        tab = self.fake.books[IDS['teachers']]['tabs']['Danh sách GV TT']
+        tab[1][9] = 'x' * 300 + '@example.com'
+        tab[1][4] = 'Loại ' * 40
+        r = self.setup_all(['teachers'])['result']
+        self.assertNotIn('Chưa lưu được', r['summary']['teachers']['message'])
+        an = next(t for t in self.svc.stores['real'].read()['teachers'] if t['name'] == 'Lê Văn An')
+        self.assertEqual(len(an['email']), 160)
+        self.assertTrue(70 < len(an['type']) <= 80)
+
+    def test_setup_twice_does_not_duplicate_teachers(self):
+        self.setup_all()
+        self.setup_all()
+        state = self.svc.stores['real'].read()
+        self.assertEqual(len(state['teachers']), 3)
+
+    def test_existing_teacher_matched_by_name_keeps_record(self):
+        s = self.svc.command('real', self.rev(), uid(), 'teacher.upsert', {'code': 'C77', 'name': 'Lê  Văn An', 'status': 'active'})
+        tid = s['result']['id']
+        self.setup_all(['teachers'])
+        state = self.svc.stores['real'].read()
+        an = [t for t in state['teachers'] if group.name_key(t['name']) == 'le van an']
+        self.assertEqual(len(an), 1)
+        self.assertEqual((an[0]['id'], an[0]['code']), (tid, '1001'))
+
     def test_name_matching(self):
         self.assertEqual(group.name_key('Ms. Lê  Văn An '), group.name_key('lê văn an'))
         self.assertEqual(group.to_percent('37.50%'), 37.5)

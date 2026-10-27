@@ -17,6 +17,7 @@ REQUIRED = {'teachers': ['ho va ten', 'ma gv', 'tinh trang'],
             'pass': ['ho va ten gv', 'ma lop', 'du kien pass'],
             'errors': ['thoi gian phat sinh loi', 'ma lop', 'buoi']}
 ERRORS = {'#n/a', '#ref!', '#value!', '#error!', '#div/0!', '#name?', '#null!', '#num!', 'loading...'}
+LIMITS = {'level': 120, 'type': 80, 'phone': 40, 'email': 160}
 LADDER = ['Nhắc nhở', 'Cảnh cáo', 'Trừ 1/2 công', 'Trừ 1 công']
 STAGES = ['Giai đoạn I', 'Giai đoạn II', 'Giai đoạn III', 'Giai đoạn IV', 'Giai đoạn V', 'Giai đoạn VI']
 
@@ -331,6 +332,9 @@ def apply_parsed(service, state, parsed, clock):
     """Write freshly read sheets into the store. `parsed` = {kind: parse() result}. Returns per-kind summary."""
     g = group_state(state)
     summary = {}
+    for kind, p in parsed.items():  # the tab/header may have moved; remember where the table is now
+        if kind in g['sources']:
+            g['sources'][kind].update(sheet=p['sheet'], header=p['header'])
     if 'teachers' in parsed:
         g['data']['teachers'] = {**parsed['teachers'], 'read': clock.stamp()}
         summary['teachers'] = sync_teachers(service, state, g, clock)
@@ -365,6 +369,7 @@ def sync_teachers(service, state, g, clock):
     f = g['data']['teachers'].get('fields', {})
     created = updated = 0
     listed = set()
+    problems = []
     for r in g['data']['teachers']['rows']:
         v = r['values']
         key = name_key(r['name'])
@@ -375,14 +380,18 @@ def sync_teachers(service, state, g, clock):
         code = str(v.get(f.get('code')) or '').strip() or (old['code'] if old else 'GV-' + str(r['row']))
         if any(t['code'].lower() == code.lower() and (old is None or t['id'] != old['id']) for t in state['teachers']):
             code = old['code'] if old else code + '-' + str(r['row'])
-        payload = {**(old or {}), 'code': code, 'name': r['name'], 'status': status}
+        payload = {**(old or {}), 'code': code[:80], 'name': r['name'][:160], 'status': status}
         for field in ('level', 'type', 'phone', 'email'):
             label = f.get(field)
-            if label and v.get(label) not in (None, ''):
-                payload[field] = text(str(v[label]), maximum=160)
+            if label and v.get(label) not in (None, '', '[ĐÃ ẨN]'):
+                payload[field] = str(v[label]).strip()[:LIMITS[field]]
         if not payload.get('type') and f.get('mode') and v.get(f['mode']):
-            payload['type'] = str(v[f['mode']])
-        result = service.cmd_teacher_upsert(state, payload, clock)
+            payload['type'] = str(v[f['mode']]).strip()[:LIMITS['type']]
+        try:
+            result = service.cmd_teacher_upsert(state, payload, clock)
+        except AppError as e:  # one bad row must not block the whole update
+            problems.append(r['name'] + ': ' + str(e))
+            continue
         t = next(t for t in state['teachers'] if t['id'] == result['id'])
         t['groupManaged'] = True
         if old:
@@ -392,14 +401,18 @@ def sync_teachers(service, state, g, clock):
     archived = 0
     for t in state['teachers']:
         if t.get('groupManaged') and name_key(t['name']) not in listed and t['status'] != 'archived':
-            service.cmd_teacher_upsert(state, {**t, 'status': 'archived'}, clock)
-            archived += 1
-    return {'kept': len(listed), 'created': created, 'updated': updated, 'archived': archived}
+            try:
+                service.cmd_teacher_upsert(state, {**t, 'status': 'archived'}, clock)
+                archived += 1
+            except AppError as e:
+                problems.append(t['name'] + ': ' + str(e))
+    return {'kept': len(listed), 'created': created, 'updated': updated, 'archived': archived, 'problems': problems[:10]}
 
 
 def message(kind, s):
     if kind == 'teachers':
-        return f"{s['kept']} giáo viên trong danh sách ({s['created']} mới, {s['updated']} cập nhật" + (f", {s['archived']} đã rời danh sách" if s['archived'] else '') + ')'
+        return (f"{s['kept']} giáo viên trong danh sách ({s['created']} mới, {s['updated']} cập nhật" + (f", {s['archived']} đã rời danh sách" if s['archived'] else '') + ')'
+                + (f". Chưa lưu được {len(s['problems'])} GV: " + '; '.join(s['problems'][:3]) if s.get('problems') else ''))
     extra = f" ({s['mine']} dòng có PIC đã chọn)" if s.get('mine') is not None else ''
     return f"{s['kept']} dòng của tổ{extra}; bỏ qua {s['outside']} dòng của GV ngoài danh sách"
 
@@ -409,8 +422,13 @@ def message(kind, s):
 def read_kind(google, kind, link, sheet=None):
     """Read one configured sheet. Without `sheet`, probe the first rows of every tab to find the table."""
     if sheet:
-        book = google.read_book(link, tabs=[sheet])
-        return parse(kind, book), book['google']
+        try:
+            book = google.read_book(link, tabs=[sheet])
+            return parse(kind, book), book['google']
+        except AppError as e:
+            if e.code != 'SOURCE_SCHEMA':
+                raise
+            # Tab renamed or table moved: look through the other tabs before giving up.
     probe = google.read_book(link, probe=15)
     found, _ = detect(kind, probe)
     book = google.read_book(link, tabs=[found['name']])

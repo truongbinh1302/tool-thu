@@ -202,6 +202,7 @@ class TrackingMixin:
 
     def group_setup(self,mode,expected,request_id,links):
         """Save the team's sheet links: read each once now (button press), find its table, apply it."""
+        if mode!='real':raise AppError('Bộ sheet của tổ chỉ dùng với Dữ liệu thật. Chuyển sang "Dữ liệu thật" ở góc trên.',409,'DEFERRED')
         if not isinstance(links,dict) or not links or any(k not in group.KINDS or not isinstance(v,str) for k,v in links.items()):raise AppError('Danh sách link không hợp lệ.')
         links={k:text(v,maximum=2000).strip() for k,v in links.items() if v.strip()}
         if not links:raise AppError('Dán ít nhất một link Google Sheet.')
