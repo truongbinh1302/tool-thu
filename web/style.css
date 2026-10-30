@@ -42,3 +42,4 @@ body{font-family:"Be Vietnam Pro","Segoe UI",-apple-system,BlinkMacSystemFont,Ar
 .pass-table th.stage-head{text-align:center;background:#f6e3ec}.pass-table td{min-width:90px;vertical-align:top}
 .flag-low{background:#fde2e4!important}.flag-support{background:#fff1d6!important}.flag-row td:first-child{box-shadow:inset 3px 0 0 #c9577f}.legend{padding:1px 8px;border-radius:8px}
 @media (max-width:640px){.deadline-row{grid-template-columns:1fr}}
+#main:focus{outline:none}
