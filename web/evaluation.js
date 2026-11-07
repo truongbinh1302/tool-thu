@@ -6,6 +6,16 @@ function quarterPicker(id,tid=''){
  return `<label class="compact-filter">Quý đánh giá<select id="${id}" data-employee="${esc(tid)}">${data._evaluation.periods.map(q=>`<option value="${q}" ${q===selectedQuarter()?'selected':''}>${quarterLabel(q)}</option>`).join('')}</select></label>`;
 }
 function employeeScore(id){return data._evaluation.quarters[selectedQuarter()].teachers[id];}
+function quarterlyRanking(){
+ // Backend owns scores/counts/ranks; presentation uses the requested vi collation for ties.
+ return data._evaluation.quarters[selectedQuarter()].ranking.slice().sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name,'vi')||a.code.localeCompare(b.code,'vi'));
+}
+function rankingTable(printing=false){
+ return table(['Hạng','Giáo viên','Điểm','Lần +1','Lần −1','Lỗi GV','Task chưa xong','Task quá hạn'],quarterlyRanking().map(r=>`<tr><td>${r.rank}</td><td>${printing?esc(r.name):`<button class="name-button" data-teacher="${esc(r.id)}">${esc(r.name)}</button>`}<small>${esc(r.code)}</small></td><td><strong>${r.score}</strong></td><td>${r.plus}</td><td>${r.minus}</td><td>${r.errorCount}</td><td>${r.openTasks}</td><td>${r.overdueTasks}</td></tr>`));
+}
+function rankingCard(){
+ return card('Xếp hạng quý',quarterPicker('ranking-quarter')+'<p class="muted">Giáo viên đang hoạt động · điểm cao đến thấp · đồng hạng khi bằng điểm. Task là tình trạng hiện tại, lỗi GV theo quý đã chọn.</p>'+rankingTable(),'','quarter-ranking');
+}
 function employeeInfo(t){
  const fields=[['Mã',t.code],['Thể loại',t.type],['Level',t.level],['SĐT',t.phone],['Email',t.email],['Ngày sinh',t.birthday?dt(t.birthday):''],['Trạng thái',t.status==='active'?'Đang hoạt động':t.status==='inactive'?'Ngừng hoạt động':'Lưu trữ']];
  return `<dl class="employee-info">${fields.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v||'Chưa cập nhật')}</dd></div>`).join('')}</dl>`;

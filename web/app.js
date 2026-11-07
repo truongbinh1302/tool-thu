@@ -26,6 +26,7 @@ document.addEventListener('click',async e=>{const target=e.target.closest('butto
 });
 document.addEventListener('change',async e=>{const el=e.target;try{
  if(el.id==='employee-quarter'){evaluationQuarter=el.value;teacherProfile(el.dataset.employee);return;}
+ if(el.id==='ranking-quarter'){evaluationQuarter=el.value;render();return;}
  if(el.dataset.employeeStatus){el.disabled=true;try{await command('task.status',{id:el.dataset.employeeStatus,status:el.value});teacherProfile(el.dataset.employee);toast('Đã lưu trạng thái.');}finally{el.disabled=false;}return;}
  if(el.id==='group-quarter'){groupQuarter=el.value;render();return;}
  if(el.dataset.trackSource){trackingSelection=[...document.querySelectorAll('[data-track-source]:checked')].map(x=>x.dataset.trackSource);return;}

@@ -11,3 +11,8 @@ for(const fixture of fixtures){
  vm.runInContext(code+`;data=fixture;mode=data._mode;for(const t of data.teachers){let body='';modal=(title,html)=>{body=html;};teacherProfile(t.id);if(!body.includes('Điểm quý')||!body.includes('Task của nhân viên'))throw Error('Incomplete employee profile');if(/NaN|undefined%|null%|Infinity/.test(body))throw Error('Invalid employee value');}`,context);
 }
 console.log('PASS: all employee profiles render with score, tasks, deadlines and indicators.');
+{
+ const context={fixture:fixtures[0],localStorage:{getItem:()=>null},console,crypto:require('crypto').webcrypto};vm.createContext(context);
+ vm.runInContext(code+`;data=fixture;const q=selectedQuarter();data._evaluation.quarters[q].ranking=[{id:'x',code:'X',name:'Đan',score:50,rank:1},{id:'y',code:'Y',name:'Dân',score:50,rank:1},{id:'z',code:'Z',name:'An',score:49,rank:3}];const ranked=quarterlyRanking();if(ranked.map(r=>r.id).join(',')!=='y,x,z')throw Error('Vietnamese tie ordering');if(!rankingCard().includes('Xếp hạng quý'))throw Error('Missing ranking');`,context);
+}
+console.log('PASS: quarterly ranking uses Vietnamese collation and preserves backend ranks.');
