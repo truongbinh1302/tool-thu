@@ -69,7 +69,7 @@ function formModal(title,fields,save,label='Lưu thay đổi',large=false){
  try{await save(values,f);}catch(e){const er=f.querySelector('#form-error');if(er){er.textContent=e.message;er.scrollIntoView({block:'nearest'});}else toast(e.message);}finally{controls.forEach(x=>x.disabled=false);delete f.dataset.busy;b.disabled=false;b.textContent=label;}});
 }
 const field=(label,name,value='',type='text',extra='')=>`<label class="form-field">${esc(label)}<input name="${esc(name)}" type="${type}" value="${esc(value)}" ${extra}></label>`;
-const area=(label,name,value='')=>`<label class="form-field">${esc(label)}<textarea name="${esc(name)}" rows="3">${esc(value)}</textarea></label>`;
+const area=(label,name,value='',attrs='')=>`<label class="form-field">${esc(label)}<textarea name="${esc(name)}" rows="3" ${attrs}>${esc(value)}</textarea></label>`;
 const select=(label,name,items,value='')=>`<label class="form-field">${esc(label)}<select name="${esc(name)}">${items.map(([id,s])=>`<option value="${esc(id)}" ${String(id)===String(value)?'selected':''}>${esc(s)}</option>`).join('')}</select></label>`;
 const check=(label,name,value=false)=>`<label class="check-label"><input type="checkbox" name="${esc(name)}" ${value?'checked':''}> ${esc(label)}</label>`;
 const teacherOptions=(blank=true)=>[...(blank?[['','Chưa liên kết']]:[]),...data.teachers.map(t=>[t.id,t.code+' · '+t.name+(t.status!=='active'?' (ngừng hoạt động)':'')])];

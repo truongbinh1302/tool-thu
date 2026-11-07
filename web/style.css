@@ -43,3 +43,4 @@ body{font-family:"Be Vietnam Pro","Segoe UI",-apple-system,BlinkMacSystemFont,Ar
 .flag-low{background:#fde2e4!important}.flag-support{background:#fff1d6!important}.flag-row td:first-child{box-shadow:inset 3px 0 0 #c9577f}.legend{padding:1px 8px;border-radius:8px}
 @media (max-width:640px){.deadline-row{grid-template-columns:1fr}}
 #main:focus{outline:none}
+.employee-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}.employee-info dt{font-size:12px;color:#897480}.employee-info dd{margin:0;overflow-wrap:anywhere}.employee-score{font-size:48px;font-weight:700;color:#a65377;margin:12px 0}.employee-score small{display:block;font-size:13px;font-weight:400}.modal-body>.card{margin-top:20px}.deadline-overdue td{background:#fde2e4;color:#922b48}.deadline-soon td{background:#fff1d6;color:#775414}.employee-info+ .inline-actions{margin-bottom:20px}

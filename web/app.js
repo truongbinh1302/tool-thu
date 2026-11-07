@@ -3,6 +3,8 @@ async function action(value){
  const [a,...rest]=value.split(':'),id=rest.join(':');
  if(a.startsWith('go-'))return navigate(a.slice(3));
  const handlers={
+  'score-plus':()=>scoreForm(id,1),'score-minus':()=>scoreForm(id,-1),'score-edit':()=>{const e=rowId('scoreEntries',id);scoreForm(e.teacher,e.delta,id);},'score-delete':()=>scoreDelete(id),
+  'employee-task-new':()=>taskForm('',id,'',id),'employee-task-edit':()=>taskForm(id,'','',rowId('tasks',id).teacher),
   'tracking-run':runTracking,'google-client':googleClientForm,'google-connect':googleConnect,'google-disconnect':googleDisconnect,'google-import':googleImport,'tracking-fixture':trackingFixtureForm,'tracking-review':trackingReviewList,'tracking-issue':()=>trackingIssue(id),'tracking-remove':()=>trackingRemove(id),'group-setup':groupSetupForm,'group-remove':()=>groupRemove(id),'group-settings':groupSettingsForm,'group-tab':()=>{groupTab=id;render();},'group-past':()=>{groupShowPast=!groupShowPast;render();},reload:()=>location.reload(),close:closeOverlay,'teacher-new':()=>teacherForm(),teacher:()=>teacherProfile(id),'teacher-edit':()=>teacherForm(id),'teacher-note':()=>noteForm(id),alias:()=>aliasForm(id),classes:classesModal,'class-new':()=>classForm(),class:()=>classForm(id),
   'task-new':()=>taskForm(),task:()=>taskForm(id),'task-teacher':()=>taskForm('',id),'task-toggle':async()=>{const t=rowId('tasks',id);await command('task.status',{id,status:t.status==='done'?'todo':'done'});toast('Đã lưu trạng thái công việc.');},
   'teacher-filter':()=>{teacherFilter=id;render();},'task-filter':()=>{taskFilter=id;render();},'process-filter':()=>{processFilter=id;render();},
@@ -23,6 +25,8 @@ document.addEventListener('click',async e=>{const target=e.target.closest('butto
  catch(err){delete target.dataset.actionBusy;toast(err.message);}
 });
 document.addEventListener('change',async e=>{const el=e.target;try{
+ if(el.id==='employee-quarter'){evaluationQuarter=el.value;teacherProfile(el.dataset.employee);return;}
+ if(el.dataset.employeeStatus){el.disabled=true;try{await command('task.status',{id:el.dataset.employeeStatus,status:el.value});teacherProfile(el.dataset.employee);toast('Đã lưu trạng thái.');}finally{el.disabled=false;}return;}
  if(el.id==='group-quarter'){groupQuarter=el.value;render();return;}
  if(el.dataset.trackSource){trackingSelection=[...document.querySelectorAll('[data-track-source]:checked')].map(x=>x.dataset.trackSource);return;}
  if(el.id==='data-mode'){
