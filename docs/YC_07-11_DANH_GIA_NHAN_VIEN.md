@@ -20,7 +20,7 @@ Nguồn: buổi họp gần nhất với khách, chủ dự án ghi nhận ngày
 - Điểm hiện tại = 50 + tổng các lần +1 − tổng các lần −1 trong quý đó. Sang quý mới tự về 50; lịch sử quý cũ giữ nguyên, xem lại được.
 - Mỗi lần +1/−1 là **một bản ghi**: GV, quý, dấu (+1/−1), ngày, lý do (bắt buộc), người nhập (mặc định "Thư"), thời điểm tạo. Sửa/xóa được từng bản ghi; có ghi vào nhật ký thao tác như các bản ghi khác.
 - **Không** tự cộng/trừ điểm từ lỗi QC, Lỗi GV, chỉ số hay deadline. Chỉ hiện các thông tin đó cạnh điểm để Thư tự quyết. (Đúng nguyên tắc hiện có: "chưa tự áp dụng chế tài, điểm phạt hoặc xếp loại quý".)
-- Không chặn trên/dưới (điểm có thể > 50 hoặc < 0). Xem câu hỏi mở 1.
+- Không chặn trên/dưới (điểm có thể > 50 hoặc < 0). Đã chốt, xem mục Quyết định.
 
 ### Trang hồ sơ nhân viên (tổng hợp)
 Mở từ trang Đội ngũ giáo viên (bấm tên GV). Một trang gom đủ, mỗi phần là một thẻ:
@@ -49,8 +49,14 @@ Mở từ trang Đội ngũ giáo viên (bấm tên GV). Một trang gom đủ, 
 - UI: +1/−1 bắt buộc lý do; trang hồ sơ hiện đủ các thẻ; quá hạn tô màu; in/xuất PDF từng GV và tổng quát, kiểm tra dấu tiếng Việt và ngắt trang.
 - Toàn bộ test cũ vẫn pass; build Mac (`.github/workflows/build-mac.yml`) thành công.
 
-## Câu hỏi mở (hỏi Thư, chưa chặn việc làm)
-1. Điểm có giới hạn 0–50 không, hay được vượt 50 / xuống dưới 0? (Mặc định: không giới hạn.)
-2. Lỗi GV (nhắc nhở/cảnh cáo/trừ công) có tự trừ điểm không? (Mặc định: không, chỉ hiển thị.)
-3. +1/−1 có cần chọn "loại lý do" cố định (vd: chuyên cần, BTVN, lỗi QC…) hay chỉ ghi chữ tự do? (Mặc định: chữ tự do.)
-4. Xếp hạng chỉ GV "Đang dạy" hay cả GV đã nghỉ trong quý? (Mặc định: chỉ Đang dạy.)
+## Quyết định đã chốt (chủ dự án duyệt 07/11/2026)
+1. Điểm có giới hạn 0–50 không, hay được vượt 50 / xuống dưới 0? → **Không giới hạn.**
+2. Lỗi GV (nhắc nhở/cảnh cáo/trừ công) có tự trừ điểm không? → **Không**, chỉ hiển thị.
+3. +1/−1 có cần chọn "loại lý do" cố định (vd: chuyên cần, BTVN, lỗi QC…) hay chỉ ghi chữ tự do? → **Chữ tự do.**
+4. Xếp hạng chỉ GV "Đang dạy" hay cả GV đã nghỉ trong quý? → **Chỉ GV Đang dạy.**
+
+## Build DMG 1.1.0 (giao cùng việc code)
+- Sau khi mọi test pass và đã push lên `phat-trien`: chạy workflow **Build Mac app** trên nhánh `phat-trien` (`gh workflow run build-mac.yml --ref phat-trien`, **không** tick `release`).
+- Chờ run xong, xác nhận thành công và artifact `ToolThu-mac-arm64` có file `ToolThu-1.1.0-mac-arm64.dmg`.
+- Báo lại: link run, mã commit, kết quả test.
+- Nếu không có quyền chạy workflow thì dừng và báo để chủ dự án tự bấm Actions → Build Mac app → Run workflow (chọn nhánh `phat-trien`).
