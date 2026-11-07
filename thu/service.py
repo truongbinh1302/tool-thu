@@ -3,7 +3,7 @@ from datetime import date,datetime,timedelta
 import calendar
 from .common import *
 from .store import Store
-from .metrics import report
+from .metrics import report, evaluations
 from .calendar_service import CalendarMixin,calendar_events
 from .tracking import TrackingMixin,tracking_state
 from .adapters import FakeSheetsSourceAdapter
@@ -51,6 +51,7 @@ class Service(TrackingMixin,CalendarMixin):
             for k in ('attendance','homework','skill'):t[k]=r['values'][k]['displayPct'] if r else None
             t['classes']=sum(c['teacher']==t['id'] and c['status']=='active' for c in s['classes'])
         for t in s['tasks']:t['overdue']=overdue(t,clock)
+        s['_evaluation']=evaluations(s,clock)
         return s
     def command(self,mode,expected,request_id,name,p):
         if not isinstance(p,dict):raise AppError('Nội dung thao tác không hợp lệ.')
@@ -60,6 +61,7 @@ class Service(TrackingMixin,CalendarMixin):
         s,r=self.stores[mode].mutate(expected,request_id,name,p,lambda s:fn(s,p,clock),clock.stamp());return {'state':self.decorate(s,mode),'result':r}
     def cmd_teacher_upsert(self,s,p,clock):
         r,old=record(s,'teachers',p);code=text(p.get('code'),True,80)
+        r['birthday']=day(p.get('birthday',r.get('birthday','')),True)
         if any(x['id']!=r['id'] and fold(x['code'])==fold(code) for x in s['teachers']):raise AppError('Mã giáo viên đã tồn tại.',409)
         status=p.get('status','active')
         if status not in ('active','inactive','archived'):raise AppError('Trạng thái giáo viên không hợp lệ.')
@@ -68,6 +70,13 @@ class Service(TrackingMixin,CalendarMixin):
         r['statusHistory']=history
         r.update(code=code,name=text(p.get('name'),True,160),level=text(p.get('level'),maximum=120),type=text(p.get('type'),maximum=80),phone=text(p.get('phone'),maximum=40),email=text(p.get('email'),maximum=160),status=status,note=text(p.get('note',r.get('note','')),maximum=10000),created=r.get('created',clock.today()),updated=clock.stamp(),color=r.get('color',['pink','green','blue','orange'][len(s['teachers'])%4]))
         return put(s,'teachers',r,old)
+    def cmd_score_add(self,s,p,clock):
+        r,old=record(s,'scoreEntries',p)
+        if type(p.get('delta')) is not int or p['delta'] not in (1,-1):raise AppError('Điểm chỉ nhận +1 hoặc −1.')
+        r.update(teacher=ref(s,'teachers',p.get('teacher'),True),delta=p['delta'],date=day(p.get('date') or clock.today()),reason=text(p.get('reason'),True,1000),createdBy=text(p.get('createdBy') or 'Thư',True,160),created=r.get('created',clock.stamp()),updated=clock.stamp())
+        return put(s,'scoreEntries',r,old)
+    def cmd_score_delete(self,s,p,clock):
+        r=find(s,'scoreEntries',text(p.get('id'),True,100));s['scoreEntries'].remove(r);return {'id':r['id']}
     def cmd_teacher_note(self,s,p,clock):
         t=find(s,'teachers',p['id']);t['note']=text(p.get('note'),maximum=10000);t['updated']=clock.stamp();return {'id':t['id']}
     def cmd_teacher_alias(self,s,p,clock):

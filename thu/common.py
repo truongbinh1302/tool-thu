@@ -65,7 +65,7 @@ class Clock:
     def stamp(self): return self.now().astimezone(timezone.utc).isoformat()
 
 def empty_state():
-    return {**{k:[] for k in ('teachers','classes','aliases','tasks','templates','processes','events','meetings','sources','metrics','errors','importBatches','reports','feedback')},'reportNotes':{},'settings':{'attendance':85,'homework':80,'skill':70,'operator':'>=','confirmed':False,'weekConfirmed':False,'effectiveDate':'','version':'unconfirmed'},'ruleDecisions':[],'connections':{'google':'DEFERRED','icloud':'DEFERRED','enabled':False}}
+    return {**{k:[] for k in ('teachers','classes','aliases','tasks','templates','processes','events','meetings','sources','metrics','errors','importBatches','reports','feedback','scoreEntries')},'reportNotes':{},'settings':{'attendance':85,'homework':80,'skill':70,'operator':'>=','confirmed':False,'weekConfirmed':False,'effectiveDate':'','version':'unconfirmed'},'ruleDecisions':[],'connections':{'google':'DEFERRED','icloud':'DEFERRED','enabled':False}}
 
 def demo_state():
     from .runtime import resource_root

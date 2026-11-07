@@ -45,7 +45,7 @@ class FrozenTest(unittest.TestCase):
         self.assertNotIn('-X', cmd)
         self.assertFalse(any(part.endswith('start.py') for part in cmd))
         self.assertIn('--serve', cmd)
-        self.assertEqual(cmd[cmd.index('--data-dir') + 1], '/data dir/ToolThu')
+        self.assertEqual(cmd[cmd.index('--data-dir') + 1], str(Path('/data dir/ToolThu')))
 
     def test_build_id_without_source_files_changes_with_app(self):
         first = runtime.build_id()

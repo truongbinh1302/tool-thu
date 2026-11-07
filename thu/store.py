@@ -2,8 +2,8 @@
 import sqlite3, threading, json, io, zipfile, hashlib
 from pathlib import Path
 from .common import AppError, canonical, digest, empty_state, demo_state, uid
-VERSION=2; APP_ID=0x54485531
-TABLES=('teachers','classes','aliases','meetings','templates','sources','tasks','processes','events','metrics','errors','importBatches','reports')
+VERSION=3; APP_ID=0x54485531
+TABLES=('teachers','classes','aliases','meetings','templates','sources','tasks','processes','events','metrics','errors','importBatches','reports','scoreEntries')
 class Store:
     def __init__(self,directory,mode):
         self.mode=mode;self.directory=Path(directory);self.directory.mkdir(parents=True,exist_ok=True)
@@ -32,18 +32,22 @@ class Store:
                     if table=='events':cols=', source_key TEXT UNIQUE, meeting_id TEXT REFERENCES meetings(id)'
                     if table=='reports':cols=', period TEXT, version INTEGER, UNIQUE(period,version)'
                     if table=='importBatches':cols=', fingerprint TEXT UNIQUE'
+                    if table=='scoreEntries':cols=', teacher TEXT NOT NULL REFERENCES teachers(id)'
                     c.execute(f'CREATE TABLE {table}(id TEXT PRIMARY KEY,payload TEXT NOT NULL{cols})')
                 c.execute('CREATE TABLE attendance(meeting_id TEXT REFERENCES meetings(id),teacher_id TEXT REFERENCES teachers(id),status TEXT NOT NULL,PRIMARY KEY(meeting_id,teacher_id))')
                 c.execute('CREATE TABLE audit(stamp TEXT,revision INTEGER,action TEXT)')
                 c.execute('INSERT INTO meta VALUES(?,?)',('revision','0'))
                 self._write(c,demo_state() if self.mode=='demo' else empty_state())
             if version<2:c.execute('CREATE TABLE requests(id TEXT PRIMARY KEY,digest TEXT NOT NULL,revision INTEGER NOT NULL)')
+            if 0<version<3:c.execute('CREATE TABLE IF NOT EXISTS scoreEntries(id TEXT PRIMARY KEY,payload TEXT NOT NULL,teacher TEXT NOT NULL REFERENCES teachers(id))')
             c.execute(f'PRAGMA application_id={APP_ID}');c.execute(f'PRAGMA user_version={VERSION}');c.commit()
         except: c.rollback();raise
         finally:c.close()
-    def _read(self,c):
+    def _read(self,c,schema=VERSION):
         s=empty_state()
-        for t in TABLES:s[t]=[json.loads(r[0]) for r in c.execute(f'SELECT payload FROM {t} ORDER BY rowid')]
+        for t in TABLES:
+            if t=='scoreEntries' and schema==2:continue
+            s[t]=[json.loads(r[0]) for r in c.execute(f'SELECT payload FROM {t} ORDER BY rowid')]
         for k,v in c.execute('SELECT key,payload FROM preferences'):s[k]=json.loads(v)
         s['_revision']=int(c.execute("SELECT value FROM meta WHERE key='revision'").fetchone()[0]);return s
     def read(self):
@@ -59,7 +63,7 @@ class Store:
             for r in s[t]:
                 fields={'id':r['id'],'payload':canonical(r)}
                 if t in ('teachers','classes'):fields['code']=r['code']
-                if t in ('classes','aliases','tasks','processes','metrics','errors'):fields['teacher']=r.get('teacher') or None
+                if t in ('classes','aliases','tasks','processes','metrics','errors','scoreEntries'):fields['teacher']=r.get('teacher') or None
                 if t=='aliases':fields['alias_key']=r['alias_key']
                 if t in ('tasks','processes','metrics','errors'):fields['class_id']=r.get('classId') or None
                 if t in ('tasks','events'):fields['meeting_id']=r.get('meetingId') or None
@@ -115,12 +119,12 @@ class Store:
             with zipfile.ZipFile(io.BytesIO(raw)) as z:
                 if set(z.namelist())!={'manifest.json','data.sqlite3'} or sum(i.file_size for i in z.infolist())>100*1024*1024:raise ValueError()
                 m=json.loads(z.read('manifest.json'));db=z.read('data.sqlite3')
-            if m['app']!='tool-thu' or m['mode']!=self.mode or m['schema']!=VERSION or m['sha256']!=hashlib.sha256(db).hexdigest():raise ValueError()
+            if m['app']!='tool-thu' or m['mode']!=self.mode or m['schema'] not in (2,VERSION) or m['sha256']!=hashlib.sha256(db).hexdigest():raise ValueError()
             c=sqlite3.connect(':memory:');c.deserialize(db)
             try:
                 c.execute('PRAGMA trusted_schema=OFF')
-                if c.execute('PRAGMA application_id').fetchone()[0]!=APP_ID or c.execute('PRAGMA user_version').fetchone()[0]!=VERSION or c.execute('PRAGMA integrity_check').fetchone()[0]!='ok' or c.execute('PRAGMA foreign_key_check').fetchall():raise ValueError()
-                s=self._read(c)
+                if c.execute('PRAGMA application_id').fetchone()[0]!=APP_ID or c.execute('PRAGMA user_version').fetchone()[0]!=m['schema'] or c.execute('PRAGMA integrity_check').fetchone()[0]!='ok' or c.execute('PRAGMA foreign_key_check').fetchall():raise ValueError()
+                s=self._read(c,m['schema'])
             finally:c.close()
             return m,s
         except Exception:raise AppError('Bản sao lưu hỏng, khác chế độ hoặc không tương thích. Dữ liệu hiện tại được giữ nguyên.')
