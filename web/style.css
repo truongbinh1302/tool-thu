@@ -43,5 +43,25 @@ body{font-family:"Be Vietnam Pro","Segoe UI",-apple-system,BlinkMacSystemFont,Ar
 .flag-low{background:#fde2e4!important}.flag-support{background:#fff1d6!important}.flag-row td:first-child{box-shadow:inset 3px 0 0 #c9577f}.legend{padding:1px 8px;border-radius:8px}
 @media (max-width:640px){.deadline-row{grid-template-columns:1fr}}
 #main:focus{outline:none}
+#evaluation-print{display:none}
+@media print{
+ @page{size:A4;margin:14mm}
+ body.printing-evaluation{background:#fff!important;color:#222!important;font-size:10pt}
+ body.printing-evaluation>*{display:none!important}
+ body.printing-evaluation>#evaluation-print{display:block!important}
+ #evaluation-print h1{font-size:20pt}#evaluation-print h2{font-size:14pt;margin:20px 0 9px;break-after:avoid}#evaluation-print h3{font-size:11pt;break-after:avoid}
+ #evaluation-print .data-table{width:100%;min-width:0;table-layout:auto;border-collapse:collapse;font-size:9pt}
+ #evaluation-print th,#evaluation-print td{font-size:9pt;padding:6px;border:1px solid #ccc;overflow-wrap:anywhere;white-space:normal}
+ #evaluation-print thead{display:table-header-group}#evaluation-print tr,#evaluation-print .print-summary{break-inside:avoid;page-break-inside:avoid}
+ #evaluation-print .table-wrap{overflow:visible}#evaluation-print .long-copy{font-size:9pt;white-space:pre-wrap}
+ #evaluation-print .employee-info{grid-template-columns:repeat(3,1fr)}#evaluation-print .employee-info div{break-inside:avoid}
+ #evaluation-print .icon,#evaluation-print button,#evaluation-print .btn{display:none!important}
+ #evaluation-print a{color:#222;text-decoration:none}#evaluation-print a.text-link:after{content:' (' attr(href) ')';overflow-wrap:anywhere}
+ #evaluation-print .print-footnote{font-size:8pt;color:#555;margin-top:20px}
+ #evaluation-print .score-history{table-layout:fixed}
+ #evaluation-print .score-history th:first-child{width:25mm}#evaluation-print .score-history td:first-child{white-space:nowrap}
+ #evaluation-print .score-history th:nth-child(2){width:12mm}#evaluation-print .score-history th:nth-child(4){width:24mm}
+ #evaluation-print th{overflow-wrap:normal;word-break:normal}
+}
 .quarter-ranking{margin-bottom:24px}
 .employee-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}.employee-info dt{font-size:12px;color:#897480}.employee-info dd{margin:0;overflow-wrap:anywhere}.employee-score{font-size:48px;font-weight:700;color:#a65377;margin:12px 0}.employee-score small{display:block;font-size:13px;font-weight:400}.modal-body>.card{margin-top:20px}.deadline-overdue td{background:#fde2e4;color:#922b48}.deadline-soon td{background:#fff1d6;color:#775414}.employee-info+ .inline-actions{margin-bottom:20px}

@@ -30,7 +30,7 @@ const heading=(title,sub,actions='')=>`<div class="page-heading"><div><h1>${esc(
 const card=(title,body,actions='',cls='')=>`<section class="card ${cls}"><div class="card-head"><h2>${esc(title)}</h2>${actions}</div><div class="card-body">${body}</div></section>`;
 const empty=(title='Chưa có dữ liệu',sub='')=>`<div class="empty-state">${icon('leaf')}<strong>${esc(title)}</strong><p>${esc(sub)}</p></div>`;
 const notice=s=>`<div class="onboarding-tip">${icon('info')}<span>${esc(s)}</span></div>`;
-const table=(heads,rows)=>`<div class="table-wrap"><table class="data-table"><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${heads.length}">${empty()}</td></tr>`}</tbody></table></div>`;
+const table=(heads,rows,cls='')=>`<div class="table-wrap"><table class="data-table ${esc(cls)}"><thead><tr>${heads.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${heads.length}">${empty()}</td></tr>`}</tbody></table></div>`;
 function toast(s){const t=document.getElementById('toast');t.textContent=s;t.classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('visible'),5000);}
 class ApiError extends Error{constructor(s,code,status){super(s);this.code=code;this.status=status;}}
 async function api(path,body,options={}){

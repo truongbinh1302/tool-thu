@@ -14,7 +14,7 @@ function rankingTable(printing=false){
  return table(['Hạng','Giáo viên','Điểm','Lần +1','Lần −1','Lỗi GV','Task chưa xong','Task quá hạn'],quarterlyRanking().map(r=>`<tr><td>${r.rank}</td><td>${printing?esc(r.name):`<button class="name-button" data-teacher="${esc(r.id)}">${esc(r.name)}</button>`}<small>${esc(r.code)}</small></td><td><strong>${r.score}</strong></td><td>${r.plus}</td><td>${r.minus}</td><td>${r.errorCount}</td><td>${r.openTasks}</td><td>${r.overdueTasks}</td></tr>`));
 }
 function rankingCard(){
- return card('Xếp hạng quý',quarterPicker('ranking-quarter')+'<p class="muted">Giáo viên đang hoạt động · điểm cao đến thấp · đồng hạng khi bằng điểm. Task là tình trạng hiện tại, lỗi GV theo quý đã chọn.</p>'+rankingTable(),'','quarter-ranking');
+ return card('Xếp hạng quý',quarterPicker('ranking-quarter')+'<p class="muted">Giáo viên đang hoạt động · điểm cao đến thấp · đồng hạng khi bằng điểm. Task là tình trạng hiện tại, lỗi GV theo quý đã chọn.</p>'+rankingTable(),btn('Xuất PDF','evaluation-print-all'),'quarter-ranking');
 }
 function employeeInfo(t){
  const fields=[['Mã',t.code],['Thể loại',t.type],['Level',t.level],['SĐT',t.phone],['Email',t.email],['Ngày sinh',t.birthday?dt(t.birthday):''],['Trạng thái',t.status==='active'?'Đang hoạt động':t.status==='inactive'?'Ngừng hoạt động':'Lưu trữ']];
@@ -22,7 +22,7 @@ function employeeInfo(t){
 }
 function scoreHistory(id,printing=false){
  const r=employeeScore(id);
- return table(['Ngày','Điểm','Lý do','Người ghi nhận',...(printing?[]:['Thao tác'])],r.entries.map(e=>`<tr><td>${esc(dt(e.date))}</td><td>${e.delta===1?'+1':'−1'}</td><td class="long-copy">${esc(e.reason)}</td><td>${esc(e.createdBy)}</td>${printing?'':`<td>${btn('Sửa','score-edit:'+e.id,'text')}${btn('Xóa','score-delete:'+e.id,'text')}</td>`}</tr>`));
+ return table(['Ngày','Điểm','Lý do','Người ghi nhận',...(printing?[]:['Thao tác'])],r.entries.map(e=>`<tr><td>${esc(dt(e.date))}</td><td>${e.delta===1?'+1':'−1'}</td><td class="long-copy">${esc(e.reason)}</td><td>${esc(e.createdBy)}</td>${printing?'':`<td>${btn('Sửa','score-edit:'+e.id,'text')}${btn('Xóa','score-delete:'+e.id,'text')}</td>`}</tr>`),'score-history');
 }
 function employeeTasks(id,printing=false){
  const tasks=data._evaluation.employees[id].tasks;
@@ -31,11 +31,12 @@ function employeeTasks(id,printing=false){
 function employeeDeadlines(id,printing=false){
  return table(['Hạn','Nguồn','Nội dung','Chi tiết'],data._evaluation.employees[id].deadlines.map(d=>`<tr class="deadline-${d.urgency}"><td>${esc(dt(d.date))} ${esc(d.time)}<small>${d.urgency==='overdue'?'Quá hạn':d.urgency==='soon'?'Trong 7 ngày tới':''}</small></td><td>${esc(d.source)}</td><td>${!printing&&d.action?btn(d.title,d.action,'text'):esc(d.title)}</td><td class="long-copy">${esc(d.note||'—')}</td></tr>`));
 }
-function employeeIndicators(id){
+function employeeIndicators(id,printing=false){
  const detail=data._evaluation.employees[id],r=employeeScore(id),t=teacher(id);
  let html=`<p>Lỗi GV ${esc(quarterLabel(selectedQuarter()))}: <strong>${r.errorCount}</strong> · ${esc(r.handling||'Chưa có lỗi')} · QC: ${r.qc.length} ca.</p><p class="muted">Điểm chỉ thay đổi khi Thư ghi nhận +1 hoặc −1. Chỉ số từ Bộ sheet là dữ liệu đã lưu gần nhất.</p>`;
  for(const [key,label] of [['homework','CCBTVN'],['pass','Pass band cao']]){
-  const tab=detail.tables[key];html+=`<h4>${label}</h4>`+table(tab.columns.map(c=>c.stage?c.stage+' · '+c.label:c.label),tab.rows.map(row=>`<tr>${row.cells.map((v,i)=>`<td>${cellValue(tab.columns[i],v)}</td>`).join('')}</tr>`));
+  const tab=detail.tables[key],columnLabel=c=>c.stage?c.stage+' · '+c.label:c.label;
+  html+=`<h4>${label}</h4>`+(tab.columns.length?(printing?tab.rows.map((row,n)=>`<h5>Dòng ${n+1}</h5>`+table(['Chỉ số / thông tin','Giá trị'],row.cells.map((v,i)=>`<tr><td>${esc(columnLabel(tab.columns[i]))}</td><td>${cellValue(tab.columns[i],v)}</td></tr>`))).join('')||'<p>Chưa có dòng dữ liệu.</p>':table(tab.columns.map(columnLabel),tab.rows.map(row=>`<tr>${row.cells.map((v,i)=>`<td>${cellValue(tab.columns[i],v)}</td>`).join('')}</tr>`))):'<p class="muted">Chưa có dữ liệu đã lưu.</p>');
  }
  html+=`<h4>Lỗi GV trong quý</h4>`+table(['Ngày','Mã lớp / buổi','Nội dung','Chi tiết'],r.groupErrors.map(e=>`<tr><td>${esc(dt(e.date))}</td><td>${esc(e.class||'')} · ${esc(e.session??'')}</td><td>${esc(e.content)}</td><td class="long-copy">${esc(e.detail??'')}</td></tr>`));
  html+=`<h4>Lỗi QC trong quý</h4>`+table(['Ngày','Nội dung','Xử lý','Trạng thái'],r.qc.map(e=>`<tr><td>${esc(dt(e.date))}</td><td class="long-copy">${esc(e.detail)}</td><td class="long-copy">${esc(e.handling)}</td><td>${esc({open:'Đang mở',reviewed:'Đã rà soát',closed:'Đã xử lý'}[e.status]||e.status)}</td></tr>`));
@@ -44,7 +45,7 @@ function employeeIndicators(id){
 }
 function employeeProfileContent(id){
  const t=teacher(id),r=employeeScore(id),classes=data.classes.filter(c=>c.teacher===id),cases=data.processes.filter(p=>p.teacher===id),aliases=data.aliases.filter(a=>a.teacher===id);
- return `<div class="profile-heading">${avatar(t)}<div><h2>${esc(t.name)}</h2><p>${esc(t.code)}</p></div></div>`+employeeInfo(t)+`<div class="inline-actions">${btn('Sửa hồ sơ','teacher-edit:'+id)}${btn('Thêm task','employee-task-new:'+id)}${btn('Thêm mã nguồn','alias:'+id)}</div>`+
+ return `<div class="profile-heading">${avatar(t)}<div><h2>${esc(t.name)}</h2><p>${esc(t.code)}</p></div></div>`+employeeInfo(t)+`<div class="inline-actions">${btn('Sửa hồ sơ','teacher-edit:'+id)}${btn('Thêm task','employee-task-new:'+id)}${btn('Thêm mã nguồn','alias:'+id)}${btn('Xuất PDF','evaluation-print:'+id)}</div>`+
  card('Điểm quý',quarterPicker('employee-quarter',id)+`<p class="employee-score">${r.score}<small>điểm · Khởi đầu mỗi quý: 50</small></p><div class="inline-actions">${btn('+1','score-plus:'+id,'primary')}${btn('−1','score-minus:'+id)}</div>`+scoreHistory(id))+
  card('Task của nhân viên',employeeTasks(id))+card('Deadline & việc liên quan',employeeDeadlines(id))+card('Chỉ số & lỗi',employeeIndicators(id))+
  card('Ghi chú riêng',`<p class="long-copy">${esc(t.note||'Chưa có ghi chú.')}</p>`+btn('Sửa ghi chú','teacher-note:'+id,'text'))+
@@ -58,4 +59,28 @@ function scoreForm(tid,delta,id=''){
 function scoreDelete(id){
  const e=rowId('scoreEntries',id);
  confirmAction('Xóa ghi nhận điểm',`${dt(e.date)} · ${e.delta===1?'+1':'−1'} · ${e.reason}. Điểm quý sẽ được tính lại.`,async()=>{await command('score.delete',{id});teacherProfile(e.teacher);toast('Đã xóa ghi nhận.');},'Xóa ghi nhận');
+}
+function evaluationPrintContent(id=''){
+ const q=selectedQuarter();let html=`<header><h1>Tool Thư — Báo cáo đánh giá</h1><p>Quý ${esc(quarterLabel(q))} · Ngày xuất: ${esc(dt(today()))}</p></header>`;
+ if(id){
+  const t=teacher(id),r=employeeScore(id);
+  html+=`<h2>${esc(t.name)}</h2>`+employeeInfo(t)+`<h2>Điểm quý: ${r.score}</h2><p>Khởi đầu 50 điểm · ${r.plus} lần +1 · ${r.minus} lần −1</p>`+
+   '<h2>Lịch sử ghi nhận điểm</h2>'+scoreHistory(id,true)+'<h2>Task của nhân viên</h2>'+employeeTasks(id,true)+'<h2>Deadline & việc liên quan</h2>'+employeeDeadlines(id,true)+'<h2>Chỉ số & lỗi</h2>'+employeeIndicators(id,true)+`<h2>Ghi chú</h2><p class="long-copy">${esc(t.note||'Chưa có ghi chú.')}</p>`;
+ }else{
+  html+='<h2>Xếp hạng toàn tổ</h2><p>Chỉ gồm giáo viên đang hoạt động; đồng hạng khi bằng điểm.</p>'+rankingTable(true)+'<h2>Tóm tắt từng giáo viên</h2>'+quarterlyRanking().map(r=>`<section class="print-summary"><h3>${esc(r.name)} · ${esc(r.code)} · Hạng ${r.rank}</h3><p>${r.score} điểm (${r.plus} lần +1, ${r.minus} lần −1) · ${r.errorCount} lỗi GV${r.handling?' — '+esc(r.handling):''} · ${r.qc.length} ca QC.<br>${r.openTasks} task chưa xong, ${r.overdueTasks} quá hạn.</p></section>`).join('');
+ }
+ return html+'<p class="print-footnote">Điểm và lỗi theo quý đã chọn. Task, deadline và chỉ số nguồn là dữ liệu đã lưu tại ngày xuất. Mở báo cáo không đọc Google.</p>';
+}
+function evaluationFilename(id=''){
+ return id?'BaoCao_'+(fold(teacher(id).name).replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||teacher(id).code)+'_'+selectedQuarter():'XepHang_To_'+selectedQuarter();
+}
+let finishEvaluationPrint=null;
+async function printEvaluation(id=''){
+ if(finishEvaluationPrint)finishEvaluationPrint();
+ const root=document.getElementById('evaluation-print'),oldTitle=document.title;
+ root.innerHTML=evaluationPrintContent(id);document.title=evaluationFilename(id);document.body.classList.add('printing-evaluation');
+ finishEvaluationPrint=()=>{window.removeEventListener('afterprint',finishEvaluationPrint);document.body.classList.remove('printing-evaluation');root.innerHTML='';document.title=oldTitle;finishEvaluationPrint=null;};
+ window.addEventListener('afterprint',finishEvaluationPrint,{once:true});
+ try{await document.fonts.ready;await new Promise(resolve=>requestAnimationFrame(resolve));window.print();}
+ catch(e){finishEvaluationPrint?.();throw e;}
 }

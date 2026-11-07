@@ -3,6 +3,7 @@ async function action(value){
  const [a,...rest]=value.split(':'),id=rest.join(':');
  if(a.startsWith('go-'))return navigate(a.slice(3));
  const handlers={
+  'evaluation-print':()=>printEvaluation(id),'evaluation-print-all':()=>printEvaluation(),
   'score-plus':()=>scoreForm(id,1),'score-minus':()=>scoreForm(id,-1),'score-edit':()=>{const e=rowId('scoreEntries',id);scoreForm(e.teacher,e.delta,id);},'score-delete':()=>scoreDelete(id),
   'employee-task-new':()=>taskForm('',id,'',id),'employee-task-edit':()=>taskForm(id,'','',rowId('tasks',id).teacher),
   'tracking-run':runTracking,'google-client':googleClientForm,'google-connect':googleConnect,'google-disconnect':googleDisconnect,'google-import':googleImport,'tracking-fixture':trackingFixtureForm,'tracking-review':trackingReviewList,'tracking-issue':()=>trackingIssue(id),'tracking-remove':()=>trackingRemove(id),'group-setup':groupSetupForm,'group-remove':()=>groupRemove(id),'group-settings':groupSettingsForm,'group-tab':()=>{groupTab=id;render();},'group-past':()=>{groupShowPast=!groupShowPast;render();},reload:()=>location.reload(),close:closeOverlay,'teacher-new':()=>teacherForm(),teacher:()=>teacherProfile(id),'teacher-edit':()=>teacherForm(id),'teacher-note':()=>noteForm(id),alias:()=>aliasForm(id),classes:classesModal,'class-new':()=>classForm(),class:()=>classForm(id),

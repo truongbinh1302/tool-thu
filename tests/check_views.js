@@ -12,7 +12,12 @@ for(const fixture of fixtures){
 }
 console.log('PASS: all employee profiles render with score, tasks, deadlines and indicators.');
 {
- const context={fixture:fixtures[0],localStorage:{getItem:()=>null},console,crypto:require('crypto').webcrypto};vm.createContext(context);
+ const context={fixture:JSON.parse(JSON.stringify(fixtures[0])),localStorage:{getItem:()=>null},console,crypto:require('crypto').webcrypto};vm.createContext(context);
  vm.runInContext(code+`;data=fixture;const q=selectedQuarter();data._evaluation.quarters[q].ranking=[{id:'x',code:'X',name:'Đan',score:50,rank:1},{id:'y',code:'Y',name:'Dân',score:50,rank:1},{id:'z',code:'Z',name:'An',score:49,rank:3}];const ranked=quarterlyRanking();if(ranked.map(r=>r.id).join(',')!=='y,x,z')throw Error('Vietnamese tie ordering');if(!rankingCard().includes('Xếp hạng quý'))throw Error('Missing ranking');`,context);
 }
 console.log('PASS: quarterly ranking uses Vietnamese collation and preserves backend ranks.');
+for(const fixture of fixtures){
+ const context={fixture,localStorage:{getItem:()=>null},console,crypto:require('crypto').webcrypto};vm.createContext(context);
+ vm.runInContext(code+`;data=fixture;for(const id of ['',...data.teachers.map(t=>t.id)]){const html=evaluationPrintContent(id);if(!html.includes('Tool Thư — Báo cáo đánh giá')||/<button|<select/.test(html))throw Error('Invalid print content');if(/NaN|undefined%|null%|Infinity/.test(html))throw Error('Invalid print values');const filename=evaluationFilename(id);if(!filename.endsWith(selectedQuarter())||/[^A-Za-z0-9_\-]/.test(filename))throw Error('Invalid PDF filename');}`,context);
+}
+console.log('PASS: individual/team print frames and suggested PDF filenames.');
