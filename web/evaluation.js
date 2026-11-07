@@ -22,7 +22,7 @@ function employeeInfo(t){
 }
 function scoreHistory(id,printing=false){
  const r=employeeScore(id);
- return table(['Ngày','Điểm','Lý do','Người ghi nhận',...(printing?[]:['Thao tác'])],r.entries.map(e=>`<tr><td>${esc(dt(e.date))}</td><td>${e.delta===1?'+1':'−1'}</td><td class="long-copy">${esc(e.reason)}</td><td>${esc(e.createdBy)}</td>${printing?'':`<td>${btn('Sửa','score-edit:'+e.id,'text')}${btn('Xóa','score-delete:'+e.id,'text')}</td>`}</tr>`),'score-history');
+ return table(['Ngày','Điểm','Lý do','Người ghi nhận',...(printing?[]:['Thao tác'])],r.entries.map(e=>`<tr><td>${esc(dt(e.date))}</td><td>${e.delta===1?'+1':'−1'}</td><td class="long-copy">${esc(e.reason)}</td><td>${esc(e.createdBy)}</td>${printing?'':`<td><div class="inline-actions">${btn('Sửa','score-edit:'+e.id,'text')}${btn('Xóa','score-delete:'+e.id,'text')}</div></td>`}</tr>`),'score-history');
 }
 function employeeTasks(id,printing=false){
  const tasks=data._evaluation.employees[id].tasks;
