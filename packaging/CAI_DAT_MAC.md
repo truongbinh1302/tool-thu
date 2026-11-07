@@ -50,7 +50,17 @@ Các sheet khác chỉ lấy dòng của giáo viên có trong danh sách (khớ
 - Dữ liệu lưu tại `~/Library/Application Support/ToolThu` (không nằm trong app). Xóa hay thay app không mất dữ liệu.
 - Nên tạo **sao lưu** (Tùy chỉnh) định kỳ.
 
-## 5. Khi có thông báo
+## 5. Đánh giá nhân viên (bản 1.1.0)
+
+1. Mở **Đội ngũ giáo viên**. Thẻ **Xếp hạng quý** ở đầu trang có ô chọn quý; bấm tên giáo viên để mở hồ sơ.
+2. Mỗi quý bắt đầu với **50 điểm**. Trong hồ sơ, bấm **+1** hoặc **−1**, nhập ngày và lý do rồi **Lưu thay đổi**. Ngày ghi nhận quyết định quý được tính điểm. Có thể sửa/xóa ghi nhận trong lịch sử; điểm có thể trên 50 hoặc dưới 0. Lỗi và deadline chỉ để tham khảo, không tự đổi điểm.
+3. Bấm **Thêm task** trong hồ sơ: giáo viên được điền sẵn. Sửa hoặc chọn trạng thái ngay trong danh sách task. Task cũng hiện ở **Công việc của tôi**. Deadline màu đỏ là quá hạn, màu vàng là trong 7 ngày tới; bấm nội dung để mở nguồn liên quan.
+4. Muốn báo cáo riêng: chọn quý trong hồ sơ → **Xuất PDF**. Muốn báo cáo cả tổ: chọn quý ở **Xếp hạng quý** → **Xuất PDF**. Trong hộp thoại in, chọn **Lưu dưới dạng PDF** (trên Mac có thể ở menu **PDF → Lưu dưới dạng PDF**). Tên file đã gợi ý sẵn theo giáo viên/quý.
+5. Xếp hạng chỉ gồm giáo viên đang hoạt động; bằng điểm sẽ đồng hạng. Điểm và lỗi theo quý đã chọn; task, deadline và chỉ số nguồn là tình trạng đã lưu tại ngày xem/xuất. Mở hồ sơ/báo cáo không đọc lại Google; muốn số liệu mới, bấm **Cập nhật dữ liệu** trước.
+
+Trước khi cập nhật từ 1.0.0, tạo sao lưu ở **Tùy chỉnh**. Bản 1.1.0 tự nâng kho dữ liệu và khôi phục được sao lưu 1.0.0. Nếu cần quay về app 1.0.0, dùng bản sao lưu tạo trước nâng cấp; app cũ không mở được kho đã nâng.
+
+## 6. Khi có thông báo
 
 | Thông báo | Cách xử lý |
 |---|---|
@@ -59,14 +69,14 @@ Các sheet khác chỉ lấy dòng của giáo viên có trong danh sách (khớ
 | Không có quyền xem bảng tính | Tài khoản Google đang kết nối chưa được chia sẻ sheet. |
 | Mất kết nối mạng | Kiểm tra Internet rồi bấm Cập nhật dữ liệu lại. |
 
-## 6. Cập nhật bản mới
+## 7. Cập nhật bản mới
 
 1. Trong tool: tạo sao lưu, rồi **Tùy chỉnh → Dừng Tool Thư**.
 2. Mở DMG mới, kéo **Tool Thư** vào Applications, chọn **Thay thế**.
 3. Chạy lại lệnh `xattr` ở mục 1 (hoặc bấm **Vẫn mở** một lần).
 4. Mở app. Phiên bản hiện ở cuối trang. Dữ liệu, kết nối Google và link các sheet được giữ nguyên.
 
-## 7. Khi có lỗi
+## 8. Khi có lỗi
 
 - App báo lỗi khi mở: gửi file `~/Library/Application Support/ToolThu/startup.log` cho người hỗ trợ. Log không chứa nội dung hồ sơ.
 - Không xóa thư mục dữ liệu để sửa lỗi mở app.

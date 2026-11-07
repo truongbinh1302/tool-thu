@@ -6,7 +6,7 @@ HTML/CSS/JavaScript không framework, giữ CSS/SVG từ prototype Mây `d50fb57
 
 `thu/common.py`: Clock và validation. Ngày nghiệp vụ YYYY-MM-DD theo UTC+7; timestamp ISO UTC. Demo cố định, real dùng giờ thật. `service.py`: duy nhất nơi sở hữu các thay đổi nghiệp vụ. `metrics.py`: duy nhất nơi tính tổng, trạng thái và kỳ báo cáo; frontend và CSV dùng cùng kết quả. `calendar_service.py`: buổi họp/lịch/.ics; `adapters.py`: contract và fake adapter, không gọi mạng.
 
-`store.py` dùng SQLite schema 2, FK, unique, revision optimistic và request ledger. Mỗi lần ghi aggregate nhỏ (~20–30 GV) trong một transaction, các bảng quan hệ và JSON payload giữ chi tiết linh hoạt. Hiện đọc/ghi aggregate cả kho; phù hợp quy mô local nhỏ, chưa tối ưu cho hàng trăm nghìn quan sát hoặc nhiều người dùng đồng thời.
+`store.py` dùng SQLite schema 3, FK, unique, revision optimistic và request ledger. Migrate 2 → 3 thêm bảng `scoreEntries` tham chiếu GV, giữ các bảng cũ. Mỗi lần ghi aggregate nhỏ (~20–30 GV) trong một transaction, các bảng quan hệ và JSON payload giữ chi tiết linh hoạt. Hiện đọc/ghi aggregate cả kho; phù hợp quy mô local nhỏ, chưa tối ưu cho hàng trăm nghìn quan sát hoặc nhiều người dùng đồng thời.
 
 `importer.py`: ZIP/XML XLSX + CSV bằng thư viện chuẩn, giới hạn dung lượng/hàng/cột/ô; không đánh giá công thức, không truy cập relationship external. Workbook và preview chỉ giữ tạm trong bộ nhớ 20 phút; DB giữ dữ liệu hợp lệ/provenance và batch. Cột có nhãn đăng nhập bị che, nội dung có dấu hiệu secret bị ẩn. Đây không phải công cụ lọc dữ liệu nhạy cảm tổng quát: người nhập vẫn cần kiểm tra nguồn/preview.
 
@@ -15,6 +15,14 @@ HTML/CSS/JavaScript không framework, giữ CSS/SVG từ prototype Mây `d50fb57
 Không có dependency pip/npm cho runtime. Kiểm thử phát triển có Python unittest và Node (cú pháp/template). Bộ khởi động cần Python 3.11+. Chưa có installer/binary macOS/Windows tự chứa runtime.
 
 Restore kiểm tra archive, checksum/schema/mode/integrity/FK, giữ bản hiện tại rồi ghi trạng thái phục hồi trong transaction. Không chép DB đang chạy. Revision luôn tăng. Import có backup trước ghi. Chưa có rollback chọn riêng một batch sau khi đã có nhiều sửa tay; dùng restore toàn kho từ bản phù hợp và bảo toàn dữ liệu mới bằng backup.
+
+## Đánh giá nhân viên 1.1.0
+
+`score.add` / `score.delete` qua service và request ledger/audit như các lệnh khác. Điểm quý bắt đầu 50, chỉ tính bản ghi ±1 bằng ngày nghiệp vụ UTC+7. `metrics.py` sở hữu điểm, hạng đồng điểm, bộ đếm lỗi/task và danh sách deadline; `_evaluation` là dữ liệu trình bày dẫn xuất, không ghi lại vào DB. GV ngừng hoạt động/lưu trữ vẫn giữ lịch sử điểm, chỉ bị loại khỏi xếp hạng. Dự án dùng lưu trữ GV thay vì lệnh xóa cứng; FK chặn xóa GV còn bản ghi điểm.
+
+`web/evaluation.js` trình bày hồ sơ modal lớn, xếp hạng và báo cáo in. Điểm/hạng lấy từ backend, tên hòa điểm trình bày theo `localeCompare('vi')`. Task dùng bảng/lệnh cũ. Khung `#evaluation-print` + `@media print` dùng font offline và `window.print()`, dọn sau `afterprint`. Bảng sheet nhiều cột chuyển sang hai cột khi in. Điểm/lỗi lọc theo quý; task, deadline và chỉ số nguồn phản ánh bản lưu hiện tại, không phải snapshot lịch sử quý. Lịch liên quan lấy sự kiện đã lưu (ngày gốc của chuỗi lặp), loại bản chiếu trùng Task/Hồ sơ/Họp. Không đọc nguồn ngoài khi mở hồ sơ hoặc in.
+
+Khôi phục nhận schema 2 hoặc 3, đối chiếu schema trong manifest với DB thực; bản schema 2 được đọc với danh sách điểm rỗng rồi ghi vào kho schema 3 hiện hành. Bản sao lưu trước khôi phục vẫn chứa đầy đủ điểm hiện tại.
 
 
 ## Bổ sung 0.4.0

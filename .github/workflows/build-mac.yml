@@ -29,6 +29,14 @@ jobs:
       - name: Kiểm thử trên macOS
         run: python -m unittest discover -s tests -v
 
+      - name: Kiểm tra giao diện và khung in
+        env:
+          TOOL_THU_PYTHON: python
+        run: |
+          node tests/check_views.js
+          node tests/check_tracking_ui.js
+          node tests/check_evaluation_ui.js
+
       - name: Đóng gói app + DMG (ký ad-hoc, miễn phí)
         env:
           PYTHON: python
